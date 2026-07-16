@@ -4,7 +4,7 @@ import CreateQuestionForm from "@/components/instructor/form/create-question/pag
 export default function Home() {
   return (
     <div>
-      {/* <Navbar /> */}
+      <Navbar />
       <CreateQuestionForm />
     </div>
   );

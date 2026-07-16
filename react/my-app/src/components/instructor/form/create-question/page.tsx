@@ -43,6 +43,10 @@ function SubjectiveQuestion({
   return (
     <>
       <tr>
+        <td>--</td>
+      </tr>
+
+      <tr>
         <th>
           <label htmlFor={`s${index}-title`}>
             Subjective Question {index + 1}:
@@ -156,6 +160,10 @@ function ObjectiveQuestion({
 
   return (
     <>
+      <tr>
+        <td>--</td>
+      </tr>
+
       <tr>
         <th>
           <label htmlFor={`q${index}-title`}>
@@ -511,17 +519,21 @@ export default function CreateQuestionForm() {
       sections,
     };
     console.log("Full exam payload:", payload);
-    const response = await fetch(
-      "/api/mongodb/write/instructor/create-one-exam-question",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    try {
+      const response = await fetch(
+        "/api/mongodb/write/instructor/create-one-exam-question",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ payload: payload }),
         },
-        body: JSON.stringify({ payload: payload }),
-      },
-    );
-    console.log("Response from backend:", await response.json());
+      );
+      console.log("Response from backend:", await response.json());
+    } catch (error) {
+      console.error("Error creating exam question:", error);
+    }
   }
 
   const totalMarks = sections.reduce((sum, section) => {
@@ -537,7 +549,7 @@ export default function CreateQuestionForm() {
   }, 0);
 
   return (
-    <div className="p-4">
+    <div className="mt-15 p-4">
       <h1 className="mb-4 text-4xl font-bold">Create Exam</h1>
 
       <form onSubmit={handleSubmit}>

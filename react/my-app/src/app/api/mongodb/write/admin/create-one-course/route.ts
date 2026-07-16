@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { Course } from "@/app/admin/manage-course/page";
+import { Course } from "@/app/admin/manage-course-2/page";
+import { UserDB } from "../create-one-user/route";
 
 export interface CourseDB {
     _id?: ObjectId;
     name: Course["name"];
     description: Course["description"];
-    createdAt: string;
-    updatedAt?: string;
+    instructor_id?: Course["instructor_id"] | ObjectId;
+    instructor_details?: UserDB[];
+    student_ids?: Course["student_ids"] | ObjectId[];
+    student_details?: UserDB[];
+    created_at: string;
+    updated_at?: string;
 }
 
 export async function POST(request: Request) {
@@ -31,7 +36,9 @@ export async function POST(request: Request) {
         const newUser = await users.insertOne({
             name: courseData.name,
             description: courseData.description,
-            createdAt: malaysiaTime
+            instructor_id: new ObjectId(courseData.instructor_id),
+            student_ids: courseData.student_ids.map((id: string) => new ObjectId(id)),
+            created_at: malaysiaTime
         });
         return NextResponse.json({ success: true, insertedId: newUser.insertedId }, { status: 201 });
     } catch (error) {

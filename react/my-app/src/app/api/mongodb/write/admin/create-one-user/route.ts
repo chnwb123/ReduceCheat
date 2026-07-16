@@ -8,11 +8,11 @@ export interface UserDB {
     name: User["role"]["name"];
     dob: User["role"]["dob"];
     email: User["role"]["email"];
-    roleType: User["roleType"];
+    role_type: User["roleType"];
     username: User["username"];
     password: User["password"];
-    createdAt: string;
-    updatedAt?: string;
+    created_at: string;
+    updated_at?: string;
 }
 
 export async function POST(request: Request) {
@@ -36,10 +36,10 @@ export async function POST(request: Request) {
             name: userData.role.name,
             dob: userData.role.dob,
             email: userData.role.email,
-            roleType: userData.roleType,
+            role_type: userData.roleType,
             username: userData.username,
             password: userData.password,
-            createdAt: malaysiaTime
+            created_at: malaysiaTime
         });
         return NextResponse.json({ success: true, insertedId: newUser.insertedId }, { status: 201 });
     } catch (error) {

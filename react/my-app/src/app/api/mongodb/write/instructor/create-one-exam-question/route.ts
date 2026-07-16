@@ -17,8 +17,8 @@ export interface ExamQuestionDB {
         objective_questions: ObjectiveQuestionData[];
         subjective_questions: SubjectiveQuestionData[];
     }];
-    createdAt: string;
-    updatedAt?: string;
+    created_at: string;
+    updated_at?: string;
 }
 
 export async function POST(request: Request) {
@@ -48,10 +48,10 @@ export async function POST(request: Request) {
                 id: index + 1,
                 title: section.sectionTitle,
                 description: section.sectionDescription,
-                objectiveQuestions: section.objectiveQuestions,
-                subjectiveQuestions: section.subjectiveQuestions
+                objective_questions: section.objectiveQuestions,
+                subjective_questions: section.subjectiveQuestions
             })),
-            createdAt: malaysiaTime
+            created_at: malaysiaTime
         });
         return NextResponse.json({ success: true, insertedId: newExamQuestion.insertedId }, { status: 201 });
     } catch (error) {

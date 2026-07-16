@@ -32,7 +32,7 @@ export const Navbar: React.FC = () => {
               href="#"
               className="text-xl font-bold tracking-tight text-blue-600"
             >
-              BrandLogo
+              ReduceCheat
             </a>
           </div>
 

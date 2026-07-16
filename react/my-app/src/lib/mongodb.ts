@@ -6,7 +6,7 @@ declare global {
 }
 
 const uri = process.env.MONGODB_URI2;
-const options = {};
+const options = { maxPoolSize: 5 };
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
