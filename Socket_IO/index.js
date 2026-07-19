@@ -51,7 +51,7 @@ if (cluster.isPrimary) {
   });
 
   io.on("connection", async (socket) => {
-    console.log("a user connected");
+    console.log("a user connected from " + socket.id);
 
     socket.on("disconnect", () => {
       console.log("user disconnected");

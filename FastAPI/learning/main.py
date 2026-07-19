@@ -45,6 +45,10 @@ all_todos = [
 def index():
     return {"message": "Hello World"}
 
+@api.get("/exam/{exam_id}")
+def index(exam_id: int):
+    return {"message": f"Exam ID: {exam_id}"}
+
 @api.get("/todos/{todo_id}", response_model=Todo)
 def get_todo(todo_id: int):
     for todo in all_todos:

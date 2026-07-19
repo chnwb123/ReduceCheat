@@ -33,11 +33,6 @@ class MainWindow(QMainWindow):
 
         w.show()
 
-
-
-
-
-
 app = QApplication()
 
 window = MainWindow()

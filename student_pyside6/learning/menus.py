@@ -21,8 +21,6 @@ class MainWindow(QMainWindow):
         exitAction.triggered.connect(self.close)
         aboutAction.triggered.connect(lambda: print("About menu clicked"))
 
-
-
 app = QApplication()
 
 window = MainWindow()
