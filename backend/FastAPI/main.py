@@ -1,3 +1,4 @@
+from bson import ObjectId
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -36,6 +37,16 @@ async def get_exam_questions():
     try:
         questions = await db["EXAM_QUESTION_T"].find().to_list(length=1000)
         return [serialize_doc(question) for question in questions]
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+    
+@api.get("/exam-questions/{exam_question_id}")
+async def get_exam_question(exam_question_id: str):
+    try:
+        question = await db["EXAM_QUESTION_T"].find_one({"_id": ObjectId(exam_question_id)})
+        if not question:
+            raise HTTPException(status_code=404, detail="Exam question not found")
+        return serialize_doc(question)
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
 

@@ -1,0 +1,91 @@
+{
+    '_id': '6a5e7cf95ee614fd6899aa93', 
+    'title': 'Introduction to TypeScript', 
+    'description': "To examine TypeScript's prodiciency", 
+    'date': '2026-07-16', 
+    'number_of_section': 2, 
+    'sections': [
+        {
+            'id': 1, 
+            'title': 'Objective + Subjective - For Loops', 
+            'description': 'This is to examine the knowledge on foor loop', 
+            'objective_questions': [
+                {
+                    'title': 'Whats the correct iteration for for loop?', 
+                    'numOptions': 4, 
+                    'options': [
+                        'for (int i  = 0; i <= 5; i++)', 
+                        'for (int i  = 0; i <= 5; i+-)', 
+                        'for (int i  = 0; i <= 5; i//)', 
+                        'for (int i  = 0; i <= 5; i-+)'
+                    ], 
+                        'correctAnswer': 'A', 
+                        'marks': 20
+                },     
+                {
+                    'title': 'Whats the correct iteration for while loop?', 
+                    'numOptions': 4, 
+                    'options': [
+                        'while (i.equals(50))', 
+                        'while (int i = 5; i <= 5; i++)', 
+                        'while (i < 50)',
+                        'while (i -- 50)'
+                    ], 
+                        'correctAnswer': 'C', 
+                        'marks': 20
+                }
+            ], 
+            'subjective_questions': [
+                {
+                    'title': 'Explain the benefits of implementing for loops', 
+                    'correctAnswer': 'The benefits are simplified code, repetitive tasks execution and many many others.', 
+                    'marks': 20
+                }
+            ]
+        }, 
+        {
+            'id': 2, 
+            'title': 'Fully Subjective - Advanced Python Programming', 
+            'description': 'This is to examine the knowledge on foor advanced whole related topic', 
+            'objective_questions': [
+                {
+                    'title': 'Whats the correct first objective?', 
+                    'numOptions': 4, 
+                    'options': [
+                        'Select me', 
+                        'Wrong', 
+                        'Wrong', 
+                        'Wrong'
+                    ], 
+                    'correctAnswer': 'A', 
+                    'marks': 20
+                }, 
+                {
+                    'title': 'Whats the correct second objective?', 
+                    'numOptions': 4, 
+                    'options': [
+                        'Wrong', 
+                        'Wrong', 
+                        'Select me', 
+                        'Wrong'
+                    ], 
+                    'correctAnswer': 'C', 
+                    'marks': 10
+                }
+            ], 
+            'subjective_questions': [
+                {
+                    'title': 'Whats the subjective of this question?', 
+                    'correctAnswer': 'The correct answer is this, which provides a measn to the measurements of degree', 
+                    'marks': 5
+                }, 
+                {
+                    'title': 'Whats the subjective of this question?', 
+                    'correctAnswer': 'The correct answer is this, which provides a measn to the measurements of degree', 
+                    'marks': 5
+                }
+            ]
+        }
+    ], 
+    'created_at': '21/07/2026, 3:54:33 am'
+}

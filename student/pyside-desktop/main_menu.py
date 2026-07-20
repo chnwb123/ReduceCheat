@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QApplication, QFormLayout, QListWidget, QMainWindo
 from PySide6.QtCore import QEventLoop, QSize, QThread, Signal, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtGui import QFont
+from exam_answering import ExamAnsweringWindow
 
 # 1. Background Worker to make network requests without freezing the UI
 class FetchDataWorker(QThread):
@@ -70,13 +71,10 @@ class HomePage(QMainWindow):
             self.label.setText(data_dict["error"])
         else:
             for question in data_dict:
-                # self.add_item_with_button(f"Exam Title: {question.get('title', 'N/A')}" + 
-                #                           f"\nExam Description: {question.get('description', 'N/A')}" +  
-                #                           f"\nExam Date: {question.get('date', 'N/A')}")
-                self.add_item_with_button(question.get('title', 'N/A'), question.get('description', 'N/A'), question.get('date', 'N/A'))
+                self.add_item_with_button(question.get('_id', 'N/A'), question.get('title', 'N/A'), question.get('description', 'N/A'), question.get('date', 'N/A'))
                 self.label2.setText(f"Exam session found: {len(data_dict)}")
 
-    def add_item_with_button(self, text, description, date):
+    def add_item_with_button(self, exam_question_id, text, description, date):
         # 2. Create a base QListWidgetItem
         item = QListWidgetItem()
         self.list_widget.addItem(item)
@@ -90,20 +88,20 @@ class HomePage(QMainWindow):
         font = QFont("Arial", 8, QFont.Bold)
 
         # 4. Create row content (Label + Button)
-        questionLabel = QLabel("Question:")
+        questionLabel = QLabel("Exam Title:")
         questionLabel.setFont(font)
         questionText = QLabel(text)
-        descriptionLabel = QLabel("Description:")
+        descriptionLabel = QLabel("Exam Description:")
         descriptionLabel.setFont(font)
         descriptionText = QLabel(description)
-        dateLabel = QLabel("Date:")
+        dateLabel = QLabel("Exam Date:")
         dateLabel.setFont(font)
         dateText = QLabel(date)
         button = QPushButton("Join Exam")
         button.setFont(font)
         
         # Connect button click event and pass the specific item context
-        button.clicked.connect(lambda: self.handle_button_click(item))
+        button.clicked.connect(lambda: self.handle_button_click(item, exam_question_id))
 
         # 5. Add elements to layout (with a stretch to push button to the right)
         layout.addRow(questionLabel, questionText)
@@ -117,13 +115,23 @@ class HomePage(QMainWindow):
         # 7. Associate the custom widget with the QListWidgetItem
         self.list_widget.setItemWidget(item, row_widget)
 
-    def handle_button_click(self, item):
+    def handle_button_click(self, item, exam_question_id):
         # Action to perform when the button is clicked (e.g., delete item)
         row_index = self.list_widget.row(item)
         print(f"Clicked button on row {row_index} for item: {item.text()}")
-        
+        print(f"Exam Question ID: {exam_question_id}")
+        self.navigate_to_exam_answering_window(exam_question_id)
+
         # Safely remove the item from the list
         # self.list_widget.takeItem(row_index)
+
+    def navigate_to_exam_answering_window(self, exam_question_id):
+        # Close the current window
+        self.close()
+
+        # Open the Exam Answering Window
+        self.exam_answering_window = ExamAnsweringWindow(exam_question_id)  
+        self.exam_answering_window.show()
                 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
