@@ -1,0 +1,8 @@
+-- Run FastAPI Server --
+python -m fastapi dev main.py
+
+-- Run python file --
+python .\login.py
+
+-- Run React App --
+pnpm dev
