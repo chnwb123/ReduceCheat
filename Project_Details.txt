@@ -6,3 +6,14 @@ python .\login.py
 
 -- Run React App --
 pnpm dev
+
+-- Run Socket IO Server -- 
+node index
+
+
+-- Socket IO integration -- 
+
+- Socket io use central backend server
+Uses rooms, when app 1 emits, the server use io.to.emit() to pass to app 2
+
+- Figure out how to format the data to be sent to the exam unit, for every 3 sec of python, send emit to exam unit
