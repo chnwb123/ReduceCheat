@@ -3,6 +3,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import socketio
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 load_dotenv(r"c:\FY_FYP\ReduceCheat\backend\FastAPI\.env.local")
 
@@ -11,6 +13,40 @@ client = AsyncIOMotorClient(MONGODB_URI)
 db = client["reduceCheat"]
 
 api = FastAPI()
+
+# Configure CORS for standard HTTP requests 
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # React local port
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Create a Socket.IO Async Server allowing your React origin
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='http://localhost:3000')
+
+# Wrap FastAPI app with Socket.IO ASGI application
+socket_app = socketio.ASGIApp(sio, other_asgi_app=api)
+
+@sio.event
+async def connect(sid, environ):
+    print(f"Client connected: {sid}")
+    # Immediately send data to the connected client
+    await sio.emit('server_status', {'data': 'Connected successfully!'}, to=sid)
+
+@sio.event
+async def request_data(sid, data):
+    print(f"Received request from client: {data}")
+    # Process data and broadcast/respond
+    payload = {"message": "Here is your processed backend data"}
+    await sio.emit('receive_data', payload, to=sid)
+
+@sio.event
+async def disconnect(sid):
+    print(f"Client disconnected: {sid}")
+
+# Note: Run using the `socket_app` object instead of `app`
 
 class LoginData(BaseModel):
     username: str

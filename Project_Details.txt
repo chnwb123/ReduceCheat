@@ -10,8 +10,13 @@ pnpm dev
 -- Run Socket IO Server -- 
 node index
 
+-- Run FastAPI server with SocketIO server -- 
+python -m uvicorn main:socket_app --reload --port 8000
+
 
 -- Socket IO integration -- 
+
+-- (Latest) -- See google FYP bookmark
 
 - Socket io use central backend server
 Uses rooms, when app 1 emits, the server use io.to.emit() to pass to app 2
