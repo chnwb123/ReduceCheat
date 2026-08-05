@@ -4,6 +4,7 @@ import { io, type Socket } from "socket.io-client";
 
 export default function App() {
   const [backendData, setBackendData] = useState("");
+  const [yawAngle, setYawAngle] = useState("");
   const [status, setStatus] = useState("Disconnected");
   const socketRef = useRef<Socket | null>(null);
 
@@ -34,6 +35,11 @@ export default function App() {
       setStatus("Disconnected");
     });
 
+    socket.on("yaw_angle_update", (data) => {
+      setYawAngle(data.yaw_angle);
+      console.log("Received yaw angle:", data);
+    });
+
     // Cleanup connection when component unmounts
     return () => {
       socket.disconnect();
@@ -52,6 +58,7 @@ export default function App() {
   return (
     <div style={{ padding: "20px" }}>
       <h1>FastAPI to React via Socket.io</h1>
+      <h1>Yaw Angle: {yawAngle} degrees</h1>
       <p>
         Connection Status: <strong>{status}</strong>
       </p>

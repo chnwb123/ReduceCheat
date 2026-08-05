@@ -1,9 +1,13 @@
+import os
+import requests 
+os.environ["GRPC_VERBOSITY"] = "ERROR" # Suppress Abseil and gRPC logging noise
+os.environ["GLOG_minloglevel"] = "2"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # Disable oneDNN optimizations to reduce warnings
 import cv2
 import mediapipe as mp
 import time
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-import os 
 import numpy as np
 
 # 1. Path to your downloaded .task file
@@ -80,7 +84,13 @@ def print_face_landmarker_result(result: vision.FaceLandmarkerResult):
         # Extract Yaw (rotation around Y-axis)
         # Note: Check angle signs based on your coordinate convention mapping
         yaw = angles[1] 
-        print(f"Face Yaw Angle: {yaw:.2f} degrees")
+        yaw = f"{yaw:.2f}"
+        print(f"Face Yaw Angle: {yaw} degrees")
+        # Send yaw angle to FastAPI endpoint
+        try:
+            response = requests.post(f"http://127.0.0.1:8000/exam_ai", json={"yaw_angle": yaw})
+        except requests.RequestException as e:
+            print(f"Error sending yaw angle to FastAPI: {e}")
 
 def main():
     global latest_result

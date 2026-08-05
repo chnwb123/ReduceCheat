@@ -9,6 +9,7 @@ export interface ExamQuestionDB {
     title: ExamData["title"];
     description: ExamData["description"];
     date: ExamData["date"];
+    duration: ExamData["duration"];
     number_of_section: number;
     sections: [{
         id: number;
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
             title: examData.title,
             description: examData.description,
             date: examData.date,
+            duration: examData.duration,
             number_of_section: sectionData.length,
             sections: sectionData.map((section: SectionData, index: number) => ({
                 id: index + 1,

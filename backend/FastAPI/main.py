@@ -8,6 +8,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 load_dotenv(r"c:\FY_FYP\ReduceCheat\backend\FastAPI\.env.local")
 
+class LoginData(BaseModel):
+    username: str
+    password: str
+
+class AIAnalysisData(BaseModel):
+    yaw_angle: float
+
+def serialize_doc(doc):
+    doc["_id"] = str(doc["_id"])
+    return doc
+
 MONGODB_URI = os.getenv("MONGODB_URI2")
 client = AsyncIOMotorClient(MONGODB_URI)
 db = client["reduceCheat"]
@@ -48,14 +59,8 @@ async def disconnect(sid):
 
 # Note: Run using the `socket_app` object instead of `app`
 
-class LoginData(BaseModel):
-    username: str
-    password: str
 
-def serialize_doc(doc):
-    doc["_id"] = str(doc["_id"])
-    return doc
-
+# FastAPI Server Endpoints
 @api.get("/")
 def index():
     return {"message": "Hello, This is my new FastAPI application!"}
@@ -101,3 +106,16 @@ async def login(data: LoginData):
 @api.get("/exam/{exam_id}")
 def index(exam_id: int):
     return {"message": f"Exam ID: {exam_id}"}
+
+@api.post("/exam_ai")
+async def receive_yaw_angle(data: AIAnalysisData):
+    print(f"Received Yaw Angle: {data.yaw_angle} degrees")
+
+    await sio.emit(
+        "yaw_angle_update",
+        {
+            "yaw_angle": data.yaw_angle,
+        },
+    )
+
+    return {"message": "Yaw angle received and broadcast successfully."}

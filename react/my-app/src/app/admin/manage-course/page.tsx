@@ -24,7 +24,7 @@ export function UserDetailsDisplayPanelCheckbox({
     <ul>
       {userData.map((user, index) => (
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
-          <label>{user.name ?? user.email ?? "Unnamed user"}</label>
+          <label>{user.name ? user.name + " (" + user.role_id + ") " : "Unnamed user"}</label>
           <input
             type="checkbox"
             name={`student-${index}`}
@@ -53,7 +53,7 @@ export function UserDetailsDisplayPanelRadio({
     <ul>
       {userData.map((user, index) => (
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
-          <label>{String(user.name) ?? "Unnamed user"}</label>
+          <label>{user.name ? user.name + " (" + user.role_id + ") " : "Unnamed user"}</label>
           <input
             type="radio"
             name="selectedUser"
@@ -131,6 +131,7 @@ function CourseDetailsDisplayPanel({
       if (response.ok) {
         const updatedData = await response.json();
         console.log("Updated course data:", updatedData);
+        setEditingId({ editingId: null });
         setCourseSubmitted(!courseSubmitted);
       }
     } catch (error) {
@@ -324,7 +325,11 @@ function CreateCoursePanel() {
   });
 
   const [students, setStudents] = useState<UserDB[]>([]);
+  const [filteringStudents, setFilteringStudents] = useState<UserDB["name"]>("");
+  const [filteredStudents, setFilteredStudents] = useState<UserDB[]>([]);
   const [instructors, setInstructors] = useState<UserDB[]>([]);
+  const [filteringInstructors, setFilteringInstructors] = useState<UserDB["name"]>("");
+  const [filteredInstructors, setFilteredInstructors] = useState<UserDB[]>([]);
   const [courses, setCourses] = useState<CourseDB[]>([]);
 
   const [courseSubmitted, setCourseSubmitted] = useState<boolean>(false);
@@ -429,6 +434,32 @@ function CreateCoursePanel() {
     }
   }
 
+  const handleStudentFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilteringStudents(value);
+
+    const normalized = value.toLowerCase();
+    setFilteredStudents(
+      students.filter((student) =>
+        student.name?.toLowerCase().includes(normalized) ||
+        student.role_id?.toLowerCase().includes(normalized)
+      )
+    );
+  };
+
+  const handleInstructorFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilteringInstructors(value);
+
+    const normalized = value.toLowerCase();
+    setFilteredInstructors(
+      instructors.filter((instructor) =>
+        instructor.name?.toLowerCase().includes(normalized) ||
+        instructor.role_id?.toLowerCase().includes(normalized)
+      )
+    );
+  };
+
   return (
     <div>
       <h1>------------------------------</h1>
@@ -460,8 +491,18 @@ function CreateCoursePanel() {
         />
 
         <h1 className="mt-5 text-lg font-medium text-gray-700">Students</h1>
+        {/* filter students */}
+        <input
+          id={"student-filter-input"}
+          className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+          type="text"
+          placeholder="Filter Students..."
+          value={filteringStudents}
+          onChange={handleStudentFilterChange}
+          name="studentFilter"
+        />
         <UserDetailsDisplayPanelCheckbox
-          userData={students}
+          userData={filteringStudents ? filteredStudents : students}
           onCheck={(student, checked) => {
             setCourseDetails((prev) => {
               const updatedStudentIds = checked
@@ -475,8 +516,18 @@ function CreateCoursePanel() {
         />
 
         <h1 className="mt-5 text-lg font-medium text-gray-700">Instructors</h1>
+        {/* filter instructors */}
+        <input
+          id={"instructor-filter-input"}
+          className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+          type="text"
+          placeholder="Filter Instructors..."
+          value={filteringInstructors}
+          onChange={handleInstructorFilterChange}
+          name="instructorFilter"
+        />
         <UserDetailsDisplayPanelRadio
-          userData={instructors}
+          userData={filteringInstructors ? filteredInstructors : instructors}
           onSelect={(instructor) =>
             setCourseDetails((prev) => ({
               ...prev,

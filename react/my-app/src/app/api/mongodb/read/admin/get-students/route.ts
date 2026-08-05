@@ -5,7 +5,7 @@ export async function GET() {
     try {
         const client = await clientPromise;
         const db = client.db("reduceCheat");
-        const query = { roleType: "Student" };
+        const query = { role_type: "Student" };
         const students = await db.collection("USER_T").find(query).toArray();
         return NextResponse.json(students);
     } catch (error) {

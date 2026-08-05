@@ -2,24 +2,28 @@
 import { useState } from "react";
 
 export type Student = {
+  id?: string;
   name: string;
   dob: string;
   email: string;
 };
 
 export type Instructor = {
+  id?: string;
   name: string;
   dob: string;
   email: string;
 };
 
 export type Admin = {
+  id?: string;
   name: string;
   dob: string;
   email: string;
 };
 
 export type Invigilator = {
+  id?: string;
   name: string;
   dob: string;
   email: string;
@@ -33,6 +37,7 @@ export type User = {
   id?: number;
   role: Role;
   roleType: RoleType;
+  roleId?: string;
   username: string;
   password: string;
 };

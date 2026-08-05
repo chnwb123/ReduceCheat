@@ -1,10 +1,16 @@
 "use client";
 import { useState } from "react";
+import * as React from "react";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import dayjs, { Dayjs } from "dayjs";
 
 export type ExamData = {
   title: string;
   description: string;
   date: string;
+  duration: string;
 };
 
 export type ObjectiveQuestionData = {
@@ -27,6 +33,56 @@ export type SectionData = {
   objectiveQuestions: ObjectiveQuestionData[];
   subjectiveQuestions: SubjectiveQuestionData[];
 };
+
+function CustomTimePicker({
+  maxHour,
+  minuteInterval,
+  setData,
+}: {
+  maxHour: number;
+  minuteInterval: number;
+  setData: React.Dispatch<React.SetStateAction<ExamData>>;
+}) {
+  // Initialize to "0 hours, 0 minutes" using a clean baseline time
+  const [intervalValue, setIntervalValue] = React.useState<Dayjs | null>(
+    dayjs().startOf("day"),
+  );
+
+  const handleIntervalChange = (newValue: Dayjs | null) => {
+    setIntervalValue(newValue);
+
+    if (newValue) {
+      // Extract the isolated hour and minute values
+      const hours = newValue.hour();
+      const minutes = newValue.minute();
+      const totalMinutes = hours * 60 + minutes;
+
+      console.log(
+        `Interval collected: ${hours}h ${minutes}m (Total: ${totalMinutes} mins)`,
+      );
+
+      // Update the parent component's state with the total duration in minutes
+      setData((prev) => ({
+        ...prev,
+        duration: totalMinutes.toString(),
+      }));
+    }
+  };
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <TimePicker
+        label="Select Duration (Hours & Minutes)"
+        value={intervalValue}
+        onChange={handleIntervalChange}
+        ampm={false} // Enforce 24-hour format so "PM" doesn't display
+        minutesStep={minuteInterval} // Restrict minutes selection to the specified interval
+        maxTime={dayjs().set("hour", maxHour).set("minute", 60)} // allow maximum of specified hours
+        views={["hours", "minutes"]} // Filter out seconds
+      />
+    </LocalizationProvider>
+  );
+}
 
 function SubjectiveQuestion({
   index,
@@ -477,6 +533,7 @@ export default function CreateQuestionForm() {
     title: "",
     description: "",
     date: "",
+    duration: "",
   });
 
   const [sections, setSections] = useState<SectionData[]>([
@@ -599,6 +656,20 @@ export default function CreateQuestionForm() {
             value={examData.date}
             onChange={(e) => setExamData({ ...examData, date: e.target.value })}
             className="w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+          />
+        </div>
+
+        <div className="mb-6 flex items-center gap-4">
+          <label
+            htmlFor="exam-duration"
+            className="flex-none text-lg font-bold"
+          >
+            Exam Duration:
+          </label>
+          <CustomTimePicker
+            maxHour={3}
+            minuteInterval={15}
+            setData={setExamData}
           />
         </div>
 

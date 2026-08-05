@@ -10,11 +10,11 @@ export async function GET(
         console.log(roleType);
         const client = await clientPromise;
         const db = client.db("reduceCheat");
-        const users = await db.collection("USER_T").find({ roleType: roleType }).toArray();
+        const users = await db.collection("USER_T").find({ role_type: roleType }).toArray();
 
         return NextResponse.json(users);
     } catch (error) {
-        console.error("Failed to fetch exam questions:", error);
+        console.error("Failed to fetch users:", error);
         const message = error instanceof Error ? error.message : "Unknown error";
         return NextResponse.json({ error: message }, { status: 500 });
     }

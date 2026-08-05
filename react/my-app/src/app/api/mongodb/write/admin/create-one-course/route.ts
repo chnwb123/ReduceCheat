@@ -14,6 +14,7 @@ export interface CourseDB {
     student_details?: UserDB[];
     created_at: string;
     updated_at?: string;
+    role_id?: UserDB["role_id"];
 }
 
 export async function POST(request: Request) {
