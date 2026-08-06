@@ -120,17 +120,17 @@ class HomePage(QMainWindow):
         row_index = self.list_widget.row(item)
         print(f"Clicked button on row {row_index} for item: {item.text()}")
         print(f"Exam Question ID: {exam_question_id}")
-        self.navigate_to_exam_answering_window(exam_question_id)
+        self.navigate_to_exam_answering_window(exam_question_id, exam_start="2026-08-07T00:30:00", exam_end="2026-08-07T00:30:10")  # Example start and end times
 
         # Safely remove the item from the list
         # self.list_widget.takeItem(row_index)
 
-    def navigate_to_exam_answering_window(self, exam_question_id):
+    def navigate_to_exam_answering_window(self, exam_question_id, exam_start, exam_end):
         # Close the current window
         self.close()
 
         # Open the Exam Answering Window
-        self.exam_answering_window = ExamAnsweringWindow(exam_question_id)  
+        self.exam_answering_window = ExamAnsweringWindow(exam_start, exam_end, exam_question_id)  
         self.exam_answering_window.show()
                 
 if __name__ == "__main__":

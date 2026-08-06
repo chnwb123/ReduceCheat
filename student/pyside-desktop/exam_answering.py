@@ -1,7 +1,7 @@
 import sys
 import json
 from PySide6.QtWidgets import QApplication, QButtonGroup, QFormLayout, QListWidget, QMainWindow, QLabel, QVBoxLayout, QWidget, QListWidgetItem, QHBoxLayout, QPushButton, QRadioButton, QPlainTextEdit
-from PySide6.QtCore import QEventLoop, QSize, QThread, Signal, QUrl
+from PySide6.QtCore import Qt, QTimer, QDateTime, QEventLoop, QSize, QThread, Signal, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtGui import QFont
 
@@ -35,13 +35,32 @@ class FetchDataWorker(QThread):
 
 # 2. Main PySide6 Window
 class ExamAnsweringWindow(QMainWindow):
-    def __init__(self, exam_question_id=None):
-        super().__init__()
+    def __init__(self, exam_start, exam_end, exam_question_id=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.exam_locked = True
+        self.exam_start = QDateTime.fromString(exam_start, Qt.ISODate)
+        self.exam_end = QDateTime.fromString(exam_end, Qt.ISODate)
         self.exam_question_id = exam_question_id
         print("Fetched exam_question_id: ", self.exam_question_id)
         self.setWindowTitle("Student Answering Page")
         # self.setGeometry(100, 100, 400, 200)
-        self.setFixedSize(1200, 850)
+        # self.setFixedSize(1200, 850)
+
+        self.setWindowFlags(
+            Qt.Window |
+            Qt.FramelessWindowHint |
+            Qt.WindowStaysOnTopHint
+        )
+        
+        self.setWindowState(Qt.WindowFullScreen)
+        # self.setCursor(Qt.BlankCursor)
+
+        # self.grabKeyboard()   # capture keyboard input inside app
+        # self.grabMouse()      # optional: capture mouse
+
+        self.lock_timer = QTimer(self)
+        self.lock_timer.timeout.connect(self.check_exam_time)
+        self.lock_timer.start(1000)
 
         # UI Setup
         self.central_widget = QWidget()
@@ -89,6 +108,53 @@ class ExamAnsweringWindow(QMainWindow):
 
         # 3. Start data fetch automatically
         self.load_data_from_fastapi()
+
+    def check_exam_time(self):
+        now = QDateTime.currentDateTime()
+
+        if now < self.exam_start:
+            # exam not started yet
+            return
+
+        if now >= self.exam_end:
+            self.end_exam()
+
+    def keyPressEvent(self, event):
+        if self.exam_locked:
+            blocked = {
+                Qt.Key_Escape,
+                Qt.Key_Alt,
+                Qt.Key_Tab,
+            }
+            if event.key() in blocked:
+                return
+        super().keyPressEvent(event)
+
+    def closeEvent(self, event):
+        if self.exam_locked:
+            event.ignore()
+        else:
+            event.accept()
+
+    def end_exam(self):
+        self.exam_locked = False
+
+        self.lock_timer.stop()
+
+        self.releaseKeyboard()
+        self.releaseMouse()
+
+        self.setWindowFlags(Qt.Window)
+        self.showNormal()
+        self.show()
+
+        self.setCursor(Qt.ArrowCursor)
+
+        self.setFocus(Qt.OtherFocusReason)
+        self.activateWindow()
+        self.raise_()
+
+        print("Exam ended")
 
     def load_data_from_fastapi(self):
         # Assuming your local FastAPI is running on http://127.0.0.1:8000
@@ -206,9 +272,6 @@ class ExamAnsweringWindow(QMainWindow):
     def on_text_changed(self, text, subQuesNumber, sectionNum):
         print(f"Text changed for Question {subQuesNumber} in Section {sectionNum}: {text}")
 
-
-
-
     def add_item_with_button(self, exam_question_id, text, description, date):
         # 2. Create a base QListWidgetItem
         item = QListWidgetItem()
@@ -249,8 +312,7 @@ class ExamAnsweringWindow(QMainWindow):
 
         # 7. Associate the custom widget with the QListWidgetItem
         self.list_widget.setItemWidget(item, row_widget)
-
-                
+              
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = ExamAnsweringWindow()
