@@ -24,7 +24,11 @@ export function UserDetailsDisplayPanelCheckbox({
     <ul>
       {userData.map((user, index) => (
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
-          <label>{user.name ? user.name + " (" + user.role_id + ") " : "Unnamed user"}</label>
+          <label>
+            {user.name
+              ? user.name + " (" + user.role_id + ") "
+              : "Unnamed user"}
+          </label>
           <input
             type="checkbox"
             name={`student-${index}`}
@@ -53,7 +57,11 @@ export function UserDetailsDisplayPanelRadio({
     <ul>
       {userData.map((user, index) => (
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
-          <label>{user.name ? user.name + " (" + user.role_id + ") " : "Unnamed user"}</label>
+          <label>
+            {user.name
+              ? user.name + " (" + user.role_id + ") "
+              : "Unnamed user"}
+          </label>
           <input
             type="radio"
             name="selectedUser"
@@ -85,6 +93,13 @@ function CourseDetailsDisplayPanel({
   }>({
     editingId: null,
   });
+
+  const [filteringStudents, setFilteringStudents] =
+    useState<UserDB["name"]>("");
+  const [filteredStudents, setFilteredStudents] = useState<UserDB[]>([]);
+  const [filteringInstructors, setFilteringInstructors] =
+    useState<UserDB["name"]>("");
+  const [filteredInstructors, setFilteredInstructors] = useState<UserDB[]>([]);
 
   const [editingCourseDetails, setEditingCourseDetails] = useState<Course>({
     name: "",
@@ -158,6 +173,38 @@ function CourseDetailsDisplayPanel({
     }
   }
 
+  const handleStudentFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setFilteringStudents(value);
+
+    const normalized = value.toLowerCase();
+    setFilteredStudents(
+      students.filter(
+        (student) =>
+          student.name?.toLowerCase().includes(normalized) ||
+          student.role_id?.toLowerCase().includes(normalized),
+      ),
+    );
+  };
+
+  const handleInstructorFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setFilteringInstructors(value);
+
+    const normalized = value.toLowerCase();
+    setFilteredInstructors(
+      instructors.filter(
+        (instructor) =>
+          instructor.name?.toLowerCase().includes(normalized) ||
+          instructor.role_id?.toLowerCase().includes(normalized),
+      ),
+    );
+  };
+
   console.log("Editing Id: ", editingId);
   console.log(
     "Editing Course Instructor ID: ",
@@ -219,8 +266,20 @@ function CourseDetailsDisplayPanel({
             </div>
 
             <div>
+              {/* filter instructors */}
+              <input
+                id={"instructor-filter-input"}
+                className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+                type="text"
+                placeholder="Filter Instructors..."
+                value={filteringInstructors}
+                onChange={handleInstructorFilterChange}
+                name="instructorFilter"
+              />
               <UserDetailsDisplayPanelRadio
-                userData={instructors}
+                userData={
+                  filteringInstructors ? filteredInstructors : instructors
+                }
                 onSelect={(instructor) =>
                   setEditingCourseDetails((prev) => ({
                     ...prev,
@@ -236,8 +295,18 @@ function CourseDetailsDisplayPanel({
             </div>
 
             <div>
+              {/* filter students */}
+              <input
+                id={"student-filter-input"}
+                className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+                type="text"
+                placeholder="Filter Students..."
+                value={filteringStudents}
+                onChange={handleStudentFilterChange}
+                name="studentFilter"
+              />
               <UserDetailsDisplayPanelCheckbox
-                userData={students}
+                userData={filteringStudents ? filteredStudents : students}
                 onCheck={(student, checked) => {
                   setEditingCourseDetails((prev) => {
                     const updatedStudentIds = checked
@@ -251,9 +320,16 @@ function CourseDetailsDisplayPanel({
                 selectedIds={editingCourseDetails.student_ids}
               />
             </div>
-          </div>
 
-          <button type="submit">Edit Course</button>
+            <button type="submit">Update Course</button>
+            <button
+              type="button"
+              onClick={() => setEditingId({ editingId: null })}
+              className="self-start text-red-500 hover:text-red-700"
+            >
+              X
+            </button>
+          </div>
         </form>
       </div>
 
@@ -294,14 +370,20 @@ function CourseDetailsDisplayPanel({
             <div>{course.description}</div>
 
             <div>Instructor Name</div>
-            <div>{course.instructor_details?.[0]?.name}</div>
+            <div>
+              {course.instructor_details?.[0]?.name} {" ("}
+              {course.instructor_details?.[0]?.role_id}
+              {") "}
+            </div>
 
             <div>Student Names</div>
             <div>
               {course.student_details?.map((student) => (
                 <div key={String(student._id)}>
                   {student.name}
-                  {""}
+                  {" ("}
+                  {student.role_id}
+                  {") "}
                   {course.student_details?.length &&
                   course.student_details.length > 1
                     ? ", "
@@ -325,10 +407,12 @@ function CreateCoursePanel() {
   });
 
   const [students, setStudents] = useState<UserDB[]>([]);
-  const [filteringStudents, setFilteringStudents] = useState<UserDB["name"]>("");
+  const [filteringStudents, setFilteringStudents] =
+    useState<UserDB["name"]>("");
   const [filteredStudents, setFilteredStudents] = useState<UserDB[]>([]);
   const [instructors, setInstructors] = useState<UserDB[]>([]);
-  const [filteringInstructors, setFilteringInstructors] = useState<UserDB["name"]>("");
+  const [filteringInstructors, setFilteringInstructors] =
+    useState<UserDB["name"]>("");
   const [filteredInstructors, setFilteredInstructors] = useState<UserDB[]>([]);
   const [courses, setCourses] = useState<CourseDB[]>([]);
 
@@ -434,29 +518,35 @@ function CreateCoursePanel() {
     }
   }
 
-  const handleStudentFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleStudentFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const value = e.target.value;
     setFilteringStudents(value);
 
     const normalized = value.toLowerCase();
     setFilteredStudents(
-      students.filter((student) =>
-        student.name?.toLowerCase().includes(normalized) ||
-        student.role_id?.toLowerCase().includes(normalized)
-      )
+      students.filter(
+        (student) =>
+          student.name?.toLowerCase().includes(normalized) ||
+          student.role_id?.toLowerCase().includes(normalized),
+      ),
     );
   };
 
-  const handleInstructorFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInstructorFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const value = e.target.value;
     setFilteringInstructors(value);
 
     const normalized = value.toLowerCase();
     setFilteredInstructors(
-      instructors.filter((instructor) =>
-        instructor.name?.toLowerCase().includes(normalized) ||
-        instructor.role_id?.toLowerCase().includes(normalized)
-      )
+      instructors.filter(
+        (instructor) =>
+          instructor.name?.toLowerCase().includes(normalized) ||
+          instructor.role_id?.toLowerCase().includes(normalized),
+      ),
     );
   };
 
@@ -542,7 +632,13 @@ function CreateCoursePanel() {
           {instructors.find(
             (instructor) =>
               String(instructor._id) === courseDetails.instructor_id,
-          )?.name || ""}{" "}
+          )?.name || ""}
+          {" ("}
+          {instructors.find(
+            (instructor) =>
+              String(instructor._id) === courseDetails.instructor_id,
+          )?.role_id || ""}
+          {") "}
           instructor to the course of {courseDetails.name || ""}.
         </h1>
 

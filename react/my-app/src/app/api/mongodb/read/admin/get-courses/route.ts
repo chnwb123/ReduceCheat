@@ -22,8 +22,20 @@ export async function GET() {
                     as: "student_details"
                 },
             },
+            {
+                $addFields: {
+                    student_details: {
+                        $sortArray: {
+                            input: "$student_details",
+                            sortBy: {
+                                _id: 1
+                            }
+                        }
+                    }
+                }
+            }
         ])
-        .toArray();
+            .toArray();
         return NextResponse.json(courses);
     } catch (error) {
         console.error("Failed to fetch courses:", error);

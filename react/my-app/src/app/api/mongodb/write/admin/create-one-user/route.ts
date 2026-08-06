@@ -62,9 +62,7 @@ export async function POST(request: Request) {
         const users = db.collection<UserDB>("USER_T");
 
         const now = new Date();
-        const malaysiaTime = now.toLocaleString("en-MY", {
-            timeZone: "Asia/Kuala_Lumpur",
-        });
+        const malaysiaTime = now.toISOString();
 
         const newUser = await users.insertOne({
             name: userData.role.name,

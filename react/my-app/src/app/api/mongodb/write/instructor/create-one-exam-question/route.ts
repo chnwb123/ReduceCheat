@@ -4,11 +4,11 @@ import { ObjectId } from "mongodb";
 import { ExamData, ObjectiveQuestionData, SubjectiveQuestionData, SectionData } from "@/components/instructor/form/create-question/page";
 
 export interface ExamQuestionDB {
-    question_id?: string; // Delete this
     _id?: ObjectId;
     title: ExamData["title"];
     description: ExamData["description"];
-    date: ExamData["date"];
+    start_date_time: ExamData["start_date_time"];
+    end_date_time: ExamData["end_date_time"];
     duration: ExamData["duration"];
     number_of_section: number;
     sections: [{
@@ -43,8 +43,9 @@ export async function POST(request: Request) {
         const newExamQuestion = await examQuestions.insertOne({
             title: examData.title,
             description: examData.description,
-            date: examData.date,
-            duration: examData.duration,
+            start_date_time: examData.start_date_time,
+            end_date_time: examData.end_date_time,
+            duration: examData.end_minutes - examData.start_minutes,
             number_of_section: sectionData.length,
             sections: sectionData.map((section: SectionData, index: number) => ({
                 id: index + 1,

@@ -3,14 +3,17 @@ import { useState } from "react";
 import * as React from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs, { Dayjs } from "dayjs";
 
 export type ExamData = {
   title: string;
   description: string;
-  date: string;
-  duration: string;
+  start_date_time: string;
+  end_date_time: string;
+  start_minutes: number;
+  end_minutes: number;
+  duration?: number;
 };
 
 export type ObjectiveQuestionData = {
@@ -35,50 +38,63 @@ export type SectionData = {
 };
 
 function CustomTimePicker({
-  maxHour,
   minuteInterval,
   setData,
+  type,
 }: {
-  maxHour: number;
   minuteInterval: number;
   setData: React.Dispatch<React.SetStateAction<ExamData>>;
+  type: "startDateTime" | "endDateTime";
 }) {
   // Initialize to "0 hours, 0 minutes" using a clean baseline time
   const [intervalValue, setIntervalValue] = React.useState<Dayjs | null>(
-    dayjs().startOf("day"),
+    dayjs(),
   );
 
   const handleIntervalChange = (newValue: Dayjs | null) => {
     setIntervalValue(newValue);
 
     if (newValue) {
-      // Extract the isolated hour and minute values
+      // Extract the isolated date and time components
+      const datePart = newValue.format("YYYY-MM-DD");
+      const timePart = newValue.format("HH:mm");
+      // convert time to 12 hour format with AM/PM
       const hours = newValue.hour();
       const minutes = newValue.minute();
+      const ampm = hours >= 12 ? "PM" : "AM";
+      const displayHours = hours % 12 || 12;
+      const formattedTime = `${displayHours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
       const totalMinutes = hours * 60 + minutes;
 
+      const formattedDateTime = `${datePart} ${formattedTime}`;
+
       console.log(
-        `Interval collected: ${hours}h ${minutes}m (Total: ${totalMinutes} mins)`,
+        `Interval collected: ${datePart} ${timePart} (Total: ${totalMinutes} mins)`,
+      );
+
+      console.log(
+        `Formatted Time: ${formattedTime} (Hours: ${hours}, Minutes: ${minutes}, AM/PM: ${ampm})`,
       );
 
       // Update the parent component's state with the total duration in minutes
       setData((prev) => ({
         ...prev,
-        duration: totalMinutes.toString(),
+        [type === "startDateTime" ? "start_date_time" : "end_date_time"]:
+          formattedDateTime,
+        [type === "startDateTime" ? "start_minutes" : "end_minutes"]:
+          totalMinutes,
       }));
     }
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <TimePicker
-        label="Select Duration (Hours & Minutes)"
+      <DateTimePicker
+        label="Select Date & Time"
+        minDateTime={dayjs()} // Prevent selecting past times
         value={intervalValue}
         onChange={handleIntervalChange}
-        ampm={false} // Enforce 24-hour format so "PM" doesn't display
         minutesStep={minuteInterval} // Restrict minutes selection to the specified interval
-        maxTime={dayjs().set("hour", maxHour).set("minute", 60)} // allow maximum of specified hours
-        views={["hours", "minutes"]} // Filter out seconds
       />
     </LocalizationProvider>
   );
@@ -532,9 +548,13 @@ export default function CreateQuestionForm() {
   const [examData, setExamData] = useState<ExamData>({
     title: "",
     description: "",
-    date: "",
-    duration: "",
+    start_date_time: "",
+    end_date_time: "",
+    start_minutes: 0,
+    end_minutes: 0,
   });
+
+  console.log("Exam Data State:", examData);
 
   const [sections, setSections] = useState<SectionData[]>([
     {
@@ -647,29 +667,23 @@ export default function CreateQuestionForm() {
 
         <div className="mb-6 flex items-center gap-4">
           <label htmlFor="exam-date" className="flex-none text-lg font-bold">
-            Exam Date:
+            Exam Start Date Time:
           </label>
-          <input
-            id="exam-date"
-            type="date"
-            placeholder="Exam Date"
-            value={examData.date}
-            onChange={(e) => setExamData({ ...examData, date: e.target.value })}
-            className="w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+          <CustomTimePicker
+            minuteInterval={15}
+            setData={setExamData}
+            type={"startDateTime"}
           />
         </div>
 
         <div className="mb-6 flex items-center gap-4">
-          <label
-            htmlFor="exam-duration"
-            className="flex-none text-lg font-bold"
-          >
-            Exam Duration:
+          <label htmlFor="exam-date" className="flex-none text-lg font-bold">
+            Exam End Date Time:
           </label>
           <CustomTimePicker
-            maxHour={3}
             minuteInterval={15}
             setData={setExamData}
+            type={"endDateTime"}
           />
         </div>
 
