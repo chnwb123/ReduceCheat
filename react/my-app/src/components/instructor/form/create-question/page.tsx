@@ -1,10 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as React from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs, { Dayjs } from "dayjs";
+import { CourseDB } from "@/app/api/mongodb/write/admin/create-one-course/route";
+import { UserDB } from "@/app/api/mongodb/write/admin/create-one-user/route";
 
 export type ExamData = {
   title: string;
@@ -14,6 +16,8 @@ export type ExamData = {
   start_minutes: number;
   end_minutes: number;
   duration?: number;
+  instructor_id: string;
+  course_id: string;
 };
 
 export type ObjectiveQuestionData = {
@@ -544,12 +548,18 @@ function Form({
   );
 }
 
+const instructorId = "6a73da759b3e66d6031d46e7";
 export default function CreateQuestionForm() {
+  // const [instructorId, setInstructorId] = useState<UserDB["_id"]>("6a73da759b3e66d6031d46e7");
+  const [instructorCourses, setInstructorCourses] = useState<CourseDB[]>([]);
+
   const [examData, setExamData] = useState<ExamData>({
     title: "",
     description: "",
     start_date_time: "",
     end_date_time: "",
+    instructor_id: "",
+    course_id: "",
     start_minutes: 0,
     end_minutes: 0,
   });
@@ -625,11 +635,56 @@ export default function CreateQuestionForm() {
     return sum + obj + subj;
   }, 0);
 
+  useEffect(() => {
+    const getInstructorCourses = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/mongodb/read/admin/get-courses-of-instructor/${instructorId}`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        if (response.ok) {
+          const instructorCoursesData = await response.json();
+          setInstructorCourses(instructorCoursesData);
+          console.log("Fetched instructor courses:", instructorCoursesData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch instructor courses:", error);
+      }
+    };
+    getInstructorCourses();
+  }, [instructorId]);
+
   return (
     <div className="mt-15 p-4">
       <h1 className="mb-4 text-4xl font-bold">Create Exam</h1>
 
       <form onSubmit={handleSubmit}>
+        <div className="mb-6 flex items-center gap-4">
+          <label htmlFor="exam-title" className="flex-none text-lg font-bold">
+            Course:
+          </label>
+          <select
+            id={`course-select`}
+            className="w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+            value={examData.course_id}
+            onChange={(e) => setExamData({ ...examData, course_id: e.target.value })}
+            name="course_id"
+          >
+            <option value="">Select Course</option>
+            {Array.from({ length: instructorCourses.length }, (_, i) => {
+              const text = instructorCourses[i]?.name || "";
+              return (
+                <option key={i} value={String(instructorCourses[i]?._id)}>
+                  {text || "(empty)"}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
         <div className="mb-6 flex items-center gap-4">
           <label htmlFor="exam-title" className="flex-none text-lg font-bold">
             Exam Title:

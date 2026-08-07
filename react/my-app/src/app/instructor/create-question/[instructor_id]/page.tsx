@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ExamQuestionDB } from "@/app/api/mongodb/write/instructor/create-one-exam-question/route";
+import { Navbar } from "@/components/general/navigation/top-menu/page";
+import CreateQuestionForm from "@/components/instructor/form/create-question/page";
 
 type InstructorCreateQuestionPageProps = {
   params: Promise<{
@@ -31,6 +33,8 @@ export default async function InstructorCreateQuestionPage({
 
   return (
     <div>
+      <Navbar />
+      <CreateQuestionForm />
       <h1>Instructor Create Question Page</h1>
       <p>Instructor ID: {instructorId || "missing"}</p>
       <p>Exam questions found: {examQuestions.length}</p>
@@ -39,10 +43,10 @@ export default async function InstructorCreateQuestionPage({
           <li
             key={
               String(question._id) ??
-              `${question.question_id ?? "question"}-${index}`
+              `${question._id ?? "question"}-${index}`
             }
           >
-            {question.title ?? question.question_id ?? "Untitled question"}
+            {question.title ?? question._id ?? "Untitled question"}
           </li>
         ))}
       </ul>

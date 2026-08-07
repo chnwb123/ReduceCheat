@@ -5,6 +5,8 @@ import { ExamData, ObjectiveQuestionData, SubjectiveQuestionData, SectionData } 
 
 export interface ExamQuestionDB {
     _id?: ObjectId;
+    instructor_id: ExamData["instructor_id"];
+    course_id: ExamData["course_id"];
     title: ExamData["title"];
     description: ExamData["description"];
     start_date_time: ExamData["start_date_time"];
@@ -42,6 +44,8 @@ export async function POST(request: Request) {
 
         const newExamQuestion = await examQuestions.insertOne({
             title: examData.title,
+            instructor_id: examData.instructor_id,
+            course_id: examData.course_id,
             description: examData.description,
             start_date_time: examData.start_date_time,
             end_date_time: examData.end_date_time,

@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 import { User } from "@/app/admin/create-user/page";
 
 export interface UserDB {
-    _id?: ObjectId;
+    _id?: ObjectId | string;
     name: User["role"]["name"];
     dob: User["role"]["dob"];
     email: User["role"]["email"];
