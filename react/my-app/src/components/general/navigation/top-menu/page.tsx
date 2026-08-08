@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 
 // Define strict TypeScript types for navigation links
 interface NavItem {
@@ -27,14 +28,22 @@ export const Navbar: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo Section */}
-          <div className="flex shrink-0 items-center">
+          <Image
+            src="/ReduceCheat_Logo.png"
+            alt="ReduceCheat Logo"
+            width={80}
+            height={80}
+            // style={{ width: "100%", height: "auto" }}
+            priority
+          />
+          {/* <div className="flex shrink-0 items-center">
             <a
               href="#"
               className="text-xl font-bold tracking-tight text-blue-600"
             >
               ReduceCheat
             </a>
-          </div>
+          </div> */}
 
           {/* Desktop Navigation Links */}
           {/* Hidden on mobile, flex on medium screens and up */}

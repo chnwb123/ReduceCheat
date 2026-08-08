@@ -670,7 +670,9 @@ export default function CreateQuestionForm() {
             id={`course-select`}
             className="w-full rounded-md border-2 border-black px-1 py-1 outline-none"
             value={examData.course_id}
-            onChange={(e) => setExamData({ ...examData, course_id: e.target.value })}
+            onChange={(e) =>
+              setExamData({ ...examData, course_id: e.target.value })
+            }
             name="course_id"
           >
             <option value="">Select Course</option>

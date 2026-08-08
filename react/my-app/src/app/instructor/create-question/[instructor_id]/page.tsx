@@ -42,8 +42,7 @@ export default async function InstructorCreateQuestionPage({
         {examQuestions.map((question, index) => (
           <li
             key={
-              String(question._id) ??
-              `${question._id ?? "question"}-${index}`
+              String(question._id) ?? `${question._id ?? "question"}-${index}`
             }
           >
             {question.title ?? question._id ?? "Untitled question"}

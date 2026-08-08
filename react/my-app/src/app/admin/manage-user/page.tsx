@@ -38,18 +38,18 @@ export type User = {
   role: Role;
   roleType: RoleType;
   roleId?: string;
-  username: string;
+  username?: string;
   password: string;
 };
 
-export default function AdminCreateUserPage() {
-  const userTypes: RoleType[] = [
-    "Student",
-    "Instructor",
-    "Admin",
-    "Invigilator",
-  ];
+export const userTypes: RoleType[] = [
+  "Student",
+  "Instructor",
+  "Admin",
+  "Invigilator",
+];
 
+export default function AdminCreateUserPage() {
   const [userDetails, setUserDetails] = useState<User>({
     role: {
       name: "",
