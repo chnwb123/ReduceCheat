@@ -2,25 +2,105 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { User } from "@/app/admin/manage-user/page";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
+import { Loading } from "@/components/general/animation/loading/page";
 
 export default function LoginPage() {
   const [username, setUsername] = useState<User["username"]>("");
   const [password, setPassword] = useState<User["password"]>("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const searchParams = useSearchParams();
   const isRegistered = searchParams.get("registered");
+  const userName = searchParams.get("name");
+  const router = useRouter();
+
+  if (isRegistered === "true") {
+    Swal.fire({
+      title: "Registered Successfully!",
+      text:
+        "Dear " +
+        userName +
+        ", your registration was successful. You will receive an email with your username after verification. Please check your inbox and spam folder.",
+      icon: "success",
+      confirmButtonText: "Cool",
+      confirmButtonColor: "#3085d6",
+    });
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    setIsLoading(true);
     e.preventDefault();
     setError("");
+    const payload = {
+      username: username,
+      password: password,
+    };
     console.log({ username, password });
+
+    try {
+      const response = await fetch("/api/react/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ payload: payload }),
+      });
+      const result = await response.json();
+      console.log("Response from backend:", result);
+
+      if (result.exists) {
+        const userRole = result.role;
+        const userRoleId = result.role_id;
+        const name = result.name;
+        console.log("User role:", userRole);
+        console.log("User ID:", userRoleId);
+        console.log("User name:", name);
+
+        if (userRole === "Student") {
+          router.push(
+            "/student?roleId=" +
+              encodeURIComponent(userRoleId) +
+              "&name=" +
+              encodeURIComponent(name),
+          );
+        } else if (userRole === "Admin") {
+          router.push(
+            "/admin?roleId=" +
+              encodeURIComponent(userRoleId) +
+              "&name=" +
+              encodeURIComponent(name),
+          );
+        } else if (userRole === "Instructor") {
+          router.push(
+            "/instructor?roleId=" +
+              encodeURIComponent(userRoleId) +
+              "&name=" +
+              encodeURIComponent(name),
+          );
+        } else if (userRole === "Invigilator") {
+          router.push(
+            "/exam_unit?roleId=" +
+              encodeURIComponent(userRoleId) +
+              "&name=" +
+              encodeURIComponent(name),
+          );
+        }
+      } else {
+        setIsLoading(false);
+        setError("Invalid username or password. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error creating user:", error);
+      setIsLoading(false);
+      return;
+    }
   };
 
   return (
@@ -28,9 +108,9 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 px-8 py-4 shadow-2xl backdrop-blur-xl">
         <div>
           {isRegistered === "true" && (
-            <div className="bg-green-500/20 border border-green-500/50 p-2 rounded-lg">
-              <p className="text-md font-bold tracking-tight text-white text-center">
-                Registration successful! Please wait for email confirmation.
+            <div className="rounded-lg border border-green-500/50 bg-green-500/20 p-2">
+              <p className="text-md text-center font-bold tracking-tight text-white">
+                Registered Successfully! Please check your email for username.
               </p>
             </div>
           )}
@@ -110,6 +190,7 @@ export default function LoginPage() {
             Register here
           </p>
         </Link>
+        {isLoading && <Loading />}
       </div>
     </div>
   );

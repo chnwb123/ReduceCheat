@@ -8,14 +8,9 @@ interface NavItem {
   href: string;
 }
 
-const navItems: NavItem[] = [
-  { label: "Home", href: "#home" },
-  { label: "About", href: "#about" },
-  { label: "Services", href: "#services" },
-  { label: "Contact", href: "#contact" },
-];
-
-export const Navbar: React.FC = () => {
+export const Navbar: React.FC<{ navItems: NavItem[] }> = ({
+  navItems: customNavItems,
+}) => {
   // State handling for the mobile menu drawer toggle
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
@@ -24,15 +19,15 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <nav className="fixed top-0 left-0 z-50 w-full border-b border-gray-200 bg-linear-to-b from-blue-400 via-blue-300 to-blue-200 shadow-sm">
+      <div className="mx-auto px-4 sm:px-6 lg:px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo Section */}
           <Image
             src="/ReduceCheat_Logo.png"
             alt="ReduceCheat Logo"
-            width={80}
-            height={80}
+            width={90}
+            height={90}
             // style={{ width: "100%", height: "auto" }}
             priority
           />
@@ -47,12 +42,12 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Navigation Links */}
           {/* Hidden on mobile, flex on medium screens and up */}
-          <div className="hidden space-x-8 md:flex">
-            {navItems.map((item) => (
+          <div className="hidden space-x-4 md:flex">
+            {customNavItems.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
-                className="px-3 py-2 text-sm font-medium text-gray-600 transition-colors duration-200 hover:text-blue-600"
+                className="text-md px-3 py-2 font-bold text-gray-600 transition-colors duration-200 hover:text-blue-600"
               >
                 {item.label}
               </a>
@@ -62,7 +57,7 @@ export const Navbar: React.FC = () => {
           {/* Desktop Action Button */}
           <div className="hidden items-center md:flex">
             <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700">
-              Get Started
+              Log Out
             </button>
           </div>
 
@@ -118,7 +113,7 @@ export const Navbar: React.FC = () => {
         className={`${isOpen ? "block" : "hidden"} border-b border-gray-200 bg-white md:hidden`}
       >
         <div className="space-y-1 px-2 pt-2 pb-4 sm:px-3">
-          {navItems.map((item) => (
+          {customNavItems.map((item) => (
             <a
               key={item.label}
               href={item.href}

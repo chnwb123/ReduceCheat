@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { UserDB } from "@/app/api/mongodb/write/admin/create-one-user/route";
 import { CourseDB } from "@/app/api/mongodb/write/admin/create-one-course/route";
+import { Navbar } from "@/components/general/navigation/top-menu/page";
 
 export type Course = {
   id?: number;
@@ -213,7 +214,7 @@ function CourseDetailsDisplayPanel({
 
   return (
     <div className="mt-5">
-      <h2>Course Details</h2>
+      <h1 className="mt-5 text-lg font-medium text-white">Course Details</h1>
 
       <div className={`${editingId.editingId ? "block" : "hidden"}`}>
         <h3>Currently Editing Course ID: {String(editingId.editingId)}</h3>
@@ -226,7 +227,7 @@ function CourseDetailsDisplayPanel({
             <div>
               <input
                 id={"course-name-editing-input"}
-                className="w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+                className="w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
                 placeholder="Course Name"
                 value={editingCourseDetails.name}
@@ -247,7 +248,7 @@ function CourseDetailsDisplayPanel({
             <div>
               <input
                 id={"course-description-editing-input"}
-                className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+                className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
                 placeholder="Course Description"
                 value={editingCourseDetails.description}
@@ -269,7 +270,7 @@ function CourseDetailsDisplayPanel({
               {/* filter instructors */}
               <input
                 id={"instructor-filter-input"}
-                className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+                className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
                 placeholder="Filter Instructors..."
                 value={filteringInstructors}
@@ -298,7 +299,7 @@ function CourseDetailsDisplayPanel({
               {/* filter students */}
               <input
                 id={"student-filter-input"}
-                className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
+                className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
                 placeholder="Filter Students..."
                 value={filteringStudents}
@@ -321,11 +322,11 @@ function CourseDetailsDisplayPanel({
               />
             </div>
 
-            <button type="submit">Update Course</button>
+            <button type="submit" className="rounded border-2 bg-blue-800 px-2 py-1 transition hover:bg-blue-600">Update Course</button>
             <button
               type="button"
               onClick={() => setEditingId({ editingId: null })}
-              className="self-start text-red-500 hover:text-red-700"
+              className="self-start text-xl text-red-500 hover:text-red-700"
             >
               X
             </button>
@@ -337,11 +338,11 @@ function CourseDetailsDisplayPanel({
         {courses.map((course) => (
           <div
             key={String(course._id)}
-            className="grid grid-cols-2 border-2 border-black p-5"
+            className="grid grid-cols-2 rounded border-2 border-white p-5"
           >
             <div className="flex justify-center">
               <input
-                className="rounded border-2 bg-blue-100 px-2 transition hover:bg-blue-200"
+                className="rounded border-2 bg-blue-800 px-2 py-1 transition hover:bg-blue-600"
                 type="button"
                 value="Edit"
                 onClick={() => {
@@ -353,7 +354,7 @@ function CourseDetailsDisplayPanel({
 
             <div className="flex justify-center">
               <input
-                className="rounded border-2 bg-blue-100 px-2 transition hover:bg-blue-200"
+                className="rounded border-2 bg-red-800 px-2 py-1 transition hover:bg-red-600"
                 type="button"
                 value="Delete"
                 onClick={() => handleSubmitDeleting(course._id)}
@@ -551,122 +552,145 @@ function CreateCoursePanel() {
   };
 
   return (
-    <div>
-      <h1>------------------------------</h1>
-      <h2>Create Course Panel</h2>
-
-      <form onSubmit={handleSubmit}>
-        <input
-          id={"course-name-input"}
-          className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
-          type="text"
-          placeholder="Course Name"
-          value={courseDetails.name}
-          onChange={(e) =>
-            setCourseDetails({ ...courseDetails, name: e.target.value })
-          }
-          name="courseName"
+    <>
+      <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-blue-900 via-indigo-500 to-blue-600 p-4">
+        <Navbar
+          navItems={[
+            { label: "Home", href: "/admin" },
+            { label: "Manage Course", href: "/admin/manage-course" },
+            { label: "Manage User", href: "/admin/manage-user" },
+            { label: "About Admin", href: "/admin/about-us" },
+          ]}
         />
+        <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Manage Course
+            </h1>
+          </div>
+          <div className="tracking-tight text-white">
+            <form onSubmit={handleSubmit}>
+              <h1 className="mt-5 text-lg font-medium text-white">Course Name</h1>
+              <input
+                id={"course-name-input"}
+                className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
+                type="text"
+                placeholder="Course Name"
+                value={courseDetails.name}
+                onChange={(e) =>
+                  setCourseDetails({ ...courseDetails, name: e.target.value })
+                }
+                name="courseName"
+              />
 
-        <input
-          id={"course-description-input"}
-          className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
-          type="text"
-          placeholder="Course Description"
-          value={courseDetails.description}
-          onChange={(e) =>
-            setCourseDetails({ ...courseDetails, description: e.target.value })
-          }
-          name="courseDescription"
-        />
+              <h1 className="mt-5 text-lg font-medium text-white">Course Description</h1>
+              <input
+                id={"course-description-input"}
+                className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
+                type="text"
+                placeholder="Course Description"
+                value={courseDetails.description}
+                onChange={(e) =>
+                  setCourseDetails({
+                    ...courseDetails,
+                    description: e.target.value,
+                  })
+                }
+                name="courseDescription"
+              />
 
-        <h1 className="mt-5 text-lg font-medium text-gray-700">Students</h1>
-        {/* filter students */}
-        <input
-          id={"student-filter-input"}
-          className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
-          type="text"
-          placeholder="Filter Students..."
-          value={filteringStudents}
-          onChange={handleStudentFilterChange}
-          name="studentFilter"
-        />
-        <UserDetailsDisplayPanelCheckbox
-          userData={filteringStudents ? filteredStudents : students}
-          onCheck={(student, checked) => {
-            setCourseDetails((prev) => {
-              const updatedStudentIds = checked
-                ? [...(prev.student_ids ?? []), String(student._id)]
-                : (prev.student_ids ?? []).filter(
-                    (id) => id !== String(student._id),
-                  );
-              return { ...prev, student_ids: updatedStudentIds };
-            });
-          }}
-        />
+              <h1 className="mt-5 text-lg font-medium text-white">Students</h1>
+              {/* filter students */}
+              <input
+                id={"student-filter-input"}
+                className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
+                type="text"
+                placeholder="Filter Students..."
+                value={filteringStudents}
+                onChange={handleStudentFilterChange}
+                name="studentFilter"
+              />
+              <UserDetailsDisplayPanelCheckbox
+                userData={filteringStudents ? filteredStudents : students}
+                onCheck={(student, checked) => {
+                  setCourseDetails((prev) => {
+                    const updatedStudentIds = checked
+                      ? [...(prev.student_ids ?? []), String(student._id)]
+                      : (prev.student_ids ?? []).filter(
+                          (id) => id !== String(student._id),
+                        );
+                    return { ...prev, student_ids: updatedStudentIds };
+                  });
+                }}
+              />
 
-        <h1 className="mt-5 text-lg font-medium text-gray-700">Instructors</h1>
-        {/* filter instructors */}
-        <input
-          id={"instructor-filter-input"}
-          className="mt-2 w-full rounded-md border-2 border-black px-1 py-1 outline-none"
-          type="text"
-          placeholder="Filter Instructors..."
-          value={filteringInstructors}
-          onChange={handleInstructorFilterChange}
-          name="instructorFilter"
-        />
-        <UserDetailsDisplayPanelRadio
-          userData={filteringInstructors ? filteredInstructors : instructors}
-          onSelect={(instructor) =>
-            setCourseDetails((prev) => ({
-              ...prev,
-              instructor_id: String(instructor._id),
-            }))
-          }
-          selectedId={courseDetails.instructor_id}
-        />
+              <h1 className="mt-5 text-lg font-medium text-white">
+                Instructors
+              </h1>
+              {/* filter instructors */}
+              <input
+                id={"instructor-filter-input"}
+                className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
+                type="text"
+                placeholder="Filter Instructors..."
+                value={filteringInstructors}
+                onChange={handleInstructorFilterChange}
+                name="instructorFilter"
+              />
+              <UserDetailsDisplayPanelRadio
+                userData={
+                  filteringInstructors ? filteredInstructors : instructors
+                }
+                onSelect={(instructor) =>
+                  setCourseDetails((prev) => ({
+                    ...prev,
+                    instructor_id: String(instructor._id),
+                  }))
+                }
+                selectedId={courseDetails.instructor_id}
+              />
 
-        <h1 className="mt-5">
-          Registering {courseDetails.student_ids?.length || 0} students under{" "}
-          {instructors.find(
-            (instructor) =>
-              String(instructor._id) === courseDetails.instructor_id,
-          )?.name || ""}
-          {" ("}
-          {instructors.find(
-            (instructor) =>
-              String(instructor._id) === courseDetails.instructor_id,
-          )?.role_id || ""}
-          {") "}
-          instructor to the course of {courseDetails.name || ""}.
-        </h1>
+              <h1 className="mt-5 text-lg font-medium text-white">
+                Registering {courseDetails.student_ids?.length || 0} students
+                under{" "}
+                {instructors.find(
+                  (instructor) =>
+                    String(instructor._id) === courseDetails.instructor_id,
+                )?.name || ""}
+                {" ("}
+                {instructors.find(
+                  (instructor) =>
+                    String(instructor._id) === courseDetails.instructor_id,
+                )?.role_id || ""}
+                {") "}
+                instructor to the course of {courseDetails.name || ""}.
+              </h1>
 
-        <button
-          type="submit"
-          className="mt-2 rounded-md bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700"
-        >
-          Create Course
-        </button>
-      </form>
+              <button
+                type="submit"
+                className="mt-2 rounded-md bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700"
+              >
+                Create Course
+              </button>
+            </form>
 
-      <CourseDetailsDisplayPanel
-        courses={courses}
-        instructors={instructors}
-        students={students}
-        courseSubmitted={courseSubmitted}
-        setCourseSubmitted={setCourseSubmitted}
-      />
-
-      <h1>------------------------------</h1>
-    </div>
+            <CourseDetailsDisplayPanel
+              courses={courses}
+              instructors={instructors}
+              students={students}
+              courseSubmitted={courseSubmitted}
+              setCourseSubmitted={setCourseSubmitted}
+            />
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
 export default function AdminManageCoursePage2() {
   return (
     <div>
-      <h1>Admin Manage Course Page</h1>
       <CreateCoursePanel />
     </div>
   );

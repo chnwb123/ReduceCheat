@@ -15,8 +15,9 @@ import { useRouter } from "next/navigation";
 import { User } from "@/app/admin/manage-user/page";
 import { RoleType, userTypes } from "@/app/admin/manage-user/page";
 import Link from "next/link";
+import { Loading } from "@/components/general/animation/loading/page";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [userDetails, setUserDetails] = useState<User>({
     role: {
       name: "",
@@ -24,15 +25,19 @@ export default function LoginPage() {
       email: "",
     },
     password: "",
+    reenterPassword: "",
     roleType: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showReenterPassword, setShowReenterPassword] = useState(false);
   const [errors, setErrors] = useState({
     emailError: "",
     nameError: "",
     passwordError: "",
+    reenterPasswordError: ""
   });
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   // function to validate name
@@ -68,6 +73,16 @@ export default function LoginPage() {
     return "";
   };
 
+  const validateReenterPassword = (password: string, reenterPassword?: string) => {
+    if (!reenterPassword || !reenterPassword.trim()) {
+      return "Please re-enter your password.";
+    }
+    if (password !== reenterPassword) {
+      return "Passwords do not match.";
+    }
+    return "";
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const payload = {
@@ -77,13 +92,15 @@ export default function LoginPage() {
 
     const nameError = validateName(userDetails.role.name);
     const passwordError = validatePassword(userDetails.password);
+    const reenterPasswordError = validateReenterPassword(userDetails.password, userDetails.reenterPassword);
     setErrors({
       emailError: "",
       nameError,
       passwordError,
+      reenterPasswordError,
     });
 
-    if (nameError || passwordError) {
+    if (nameError || passwordError || reenterPasswordError) {
       return;
     }
 
@@ -120,6 +137,7 @@ export default function LoginPage() {
     }
 
     try {
+      setIsLoading(true);
       const response = await fetch("/api/mongodb/write/admin/create-one-user", {
         method: "POST",
         headers: {
@@ -129,7 +147,7 @@ export default function LoginPage() {
       });
       console.log("Response from backend:", await response.json());
       if (response.ok) {
-        router.push("/?registered=true");
+        router.push("/?registered=true&name=" + encodeURIComponent(userDetails.role.name));
       }
     } catch (error) {
       console.error("Error creating user:", error);
@@ -292,6 +310,42 @@ export default function LoginPage() {
               {errors.passwordError}
             </p>
           )}
+          <div>
+            <label className="mb-2 block text-xs font-semibold tracking-wider text-slate-400 uppercase">
+              Re-enter Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <input
+                type={showReenterPassword ? "text" : "password"}
+                required
+                value={userDetails.reenterPassword}
+                onChange={(e) =>
+                  setUserDetails({
+                    ...userDetails,
+                    reenterPassword: e.target.value,
+                  })
+                }
+                className="w-full rounded-xl border border-slate-800 bg-slate-950/40 py-2.5 pr-11 pl-11 text-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowReenterPassword(!showReenterPassword)}
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-500"
+              >
+                {showReenterPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+          </div>
+          {errors.reenterPasswordError && (
+            <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">
+              {errors.reenterPasswordError}
+            </p>
+          )}
           <button
             type="submit"
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-purple-500 px-4 py-3 font-medium text-white"
@@ -304,6 +358,7 @@ export default function LoginPage() {
             Go back to login page
           </p>
         </Link>
+        {isLoading && <Loading />}
       </div>
     </div>
   );
