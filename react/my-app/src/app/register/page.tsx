@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { User } from "@/app/admin/manage-user/page";
-import { RoleType, userTypes } from "@/app/admin/manage-user/page";
+import { User } from "@/app/admin/manage-user/[adminId]/page";
+import { RoleType, userTypes } from "@/app/admin/manage-user/[adminId]/page";
 import Link from "next/link";
 import { Loading } from "@/components/general/animation/loading/page";
 
@@ -35,7 +35,7 @@ export default function RegisterPage() {
     emailError: "",
     nameError: "",
     passwordError: "",
-    reenterPasswordError: ""
+    reenterPasswordError: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -73,7 +73,10 @@ export default function RegisterPage() {
     return "";
   };
 
-  const validateReenterPassword = (password: string, reenterPassword?: string) => {
+  const validateReenterPassword = (
+    password: string,
+    reenterPassword?: string,
+  ) => {
     if (!reenterPassword || !reenterPassword.trim()) {
       return "Please re-enter your password.";
     }
@@ -84,6 +87,7 @@ export default function RegisterPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    setIsLoading(true);
     e.preventDefault();
     const payload = {
       userDetails,
@@ -92,7 +96,10 @@ export default function RegisterPage() {
 
     const nameError = validateName(userDetails.role.name);
     const passwordError = validatePassword(userDetails.password);
-    const reenterPasswordError = validateReenterPassword(userDetails.password, userDetails.reenterPassword);
+    const reenterPasswordError = validateReenterPassword(
+      userDetails.password,
+      userDetails.reenterPassword,
+    );
     setErrors({
       emailError: "",
       nameError,
@@ -101,6 +108,7 @@ export default function RegisterPage() {
     });
 
     if (nameError || passwordError || reenterPasswordError) {
+      setIsLoading(false);
       return;
     }
 
@@ -122,6 +130,7 @@ export default function RegisterPage() {
           ...prev,
           emailError: "Email already registered",
         }));
+        setIsLoading(false);
         return;
       }
 
@@ -133,11 +142,11 @@ export default function RegisterPage() {
       console.log("Response from backend:", result);
     } catch (error) {
       console.error("Error creating user:", error);
+      setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
       const response = await fetch("/api/mongodb/write/admin/create-one-user", {
         method: "POST",
         headers: {
@@ -147,7 +156,9 @@ export default function RegisterPage() {
       });
       console.log("Response from backend:", await response.json());
       if (response.ok) {
-        router.push("/?registered=true&name=" + encodeURIComponent(userDetails.role.name));
+        router.push(
+          "/?registered=true&name=" + encodeURIComponent(userDetails.role.name),
+        );
       }
     } catch (error) {
       console.error("Error creating user:", error);
@@ -347,6 +358,7 @@ export default function RegisterPage() {
             </p>
           )}
           <button
+            disabled={isLoading}
             type="submit"
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-purple-500 px-4 py-3 font-medium text-white"
           >

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { User } from "@/app/admin/manage-user/page";
+import { User } from "@/app/admin/manage-user/[adminId]/page";
+import bcrypt from 'bcrypt';
 
 export interface UserDB {
     _id?: ObjectId | string;
@@ -60,6 +61,8 @@ function formatUsername(roleType: User["roleType"], roleId: string): string {
 
 export async function POST(request: Request) {
     try {
+        const saltRounds = 10;
+
         const body = await request.json();
         console.log(body);
         const userData = body.payload.userDetails;
@@ -68,13 +71,17 @@ export async function POST(request: Request) {
         const roleId = await getLatestRoleId(userData.roleType);
         const formattedRoleId = roleId ? formatRoleId(userData.roleType, roleId) : undefined;
         const formattedUsername = roleId ? formatUsername(userData.roleType, roleId) : undefined;
+        const password = userData.password
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
         const client = await clientPromise;
         const db = client.db("reduceCheat");
 
         const users = db.collection<UserDB>("USER_T");
 
         const now = new Date();
-        const malaysiaTime = now.toISOString();
+        const malaysiaTime = now.toLocaleString("en-MY", {
+            timeZone: "Asia/Kuala_Lumpur",
+        });
 
         const newUser = await users.insertOne({
             name: userData.role.name,
@@ -83,7 +90,7 @@ export async function POST(request: Request) {
             role_type: userData.roleType,
             role_id: formattedRoleId,
             username: formattedUsername,
-            password: userData.password,
+            password: hashedPassword,
             authenticated: "false",
             created_at: malaysiaTime
         });

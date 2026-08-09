@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { User } from "@/app/admin/manage-user/page";
+import { User } from "@/app/admin/manage-user/[adminId]/page";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Swal from "sweetalert2";
@@ -18,6 +18,9 @@ export default function LoginPage() {
 
   const searchParams = useSearchParams();
   const isRegistered = searchParams.get("registered");
+  const waitingForEmailConfirmation = searchParams.get(
+    "waitingForEmailConfirmation",
+  );
   const userName = searchParams.get("name");
   const router = useRouter();
 
@@ -31,6 +34,10 @@ export default function LoginPage() {
       icon: "success",
       confirmButtonText: "Cool",
       confirmButtonColor: "#3085d6",
+    }).then((result) => {
+      if (result.isConfirmed || result.isDismissed) {
+        router.replace("/?waitingForEmailConfirmation=true");
+      }
     });
   }
 
@@ -65,30 +72,30 @@ export default function LoginPage() {
 
         if (userRole === "Student") {
           router.push(
-            "/student?roleId=" +
+            "/student/" +
               encodeURIComponent(userRoleId) +
-              "&name=" +
+              "?name=" +
               encodeURIComponent(name),
           );
         } else if (userRole === "Admin") {
           router.push(
-            "/admin?roleId=" +
+            "/admin/" +
               encodeURIComponent(userRoleId) +
-              "&name=" +
+              "?name=" +
               encodeURIComponent(name),
           );
         } else if (userRole === "Instructor") {
           router.push(
-            "/instructor?roleId=" +
+            "/instructor/" +
               encodeURIComponent(userRoleId) +
-              "&name=" +
+              "?name=" +
               encodeURIComponent(name),
           );
         } else if (userRole === "Invigilator") {
           router.push(
-            "/exam_unit?roleId=" +
+            "/exam_unit/" +
               encodeURIComponent(userRoleId) +
-              "&name=" +
+              "?name=" +
               encodeURIComponent(name),
           );
         }
@@ -107,7 +114,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-blue-900 via-indigo-500 to-blue-600 p-4">
       <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/60 px-8 py-4 shadow-2xl backdrop-blur-xl">
         <div>
-          {isRegistered === "true" && (
+          {waitingForEmailConfirmation === "true" && (
             <div className="rounded-lg border border-green-500/50 bg-green-500/20 p-2">
               <p className="text-md text-center font-bold tracking-tight text-white">
                 Registered Successfully! Please check your email for username.
@@ -180,6 +187,7 @@ export default function LoginPage() {
           )}
           <button
             type="submit"
+            disabled={isLoading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-purple-500 px-4 py-3 font-medium text-white"
           >
             Sign In <ArrowRight className="h-4 w-4" />

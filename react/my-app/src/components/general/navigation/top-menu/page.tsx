@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
 
 // Define strict TypeScript types for navigation links
 interface NavItem {
@@ -13,6 +15,22 @@ export const Navbar: React.FC<{ navItems: NavItem[] }> = ({
 }) => {
   // State handling for the mobile menu drawer toggle
   const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  const router = useRouter();
+
+  const handleLogout = () => {
+    Swal.fire({
+      title: "Are you sure you want to log out?",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No",
+    }).then((result) => {
+      /* Read more about isConfirmed, isDenied below */
+      if (result.isConfirmed) {
+        router.replace("/");
+      }
+    });
+  };
 
   const toggleMenu = (): void => {
     setIsOpen(!isOpen);
@@ -56,7 +74,10 @@ export const Navbar: React.FC<{ navItems: NavItem[] }> = ({
 
           {/* Desktop Action Button */}
           <div className="hidden items-center md:flex">
-            <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700">
+            <button
+              onClick={handleLogout}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700"
+            >
               Log Out
             </button>
           </div>

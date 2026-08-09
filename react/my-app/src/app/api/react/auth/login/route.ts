@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import bcrypt from 'bcrypt';
 
 export async function POST(request: Request) {
     try {
@@ -11,11 +12,17 @@ export async function POST(request: Request) {
         const db = client.db("reduceCheat");
         const query = {
             username: username,
-            password: password,
+            authenticated: "true"
         };
         const user = await db.collection("USER_T").findOne(query);
         if (user) {
-            return NextResponse.json({ exists: true, role: user.role_type, role_id: user.role_id, name: user.name });
+            const oriHashedPassword = user.password;
+            const isMatch = await bcrypt.compare(password, oriHashedPassword);
+            if (isMatch) {
+                return NextResponse.json({ exists: true, role: user.role_type, role_id: user.role_id, name: user.name });
+            } else {
+                return NextResponse.json({ exists: false });
+            }
         } else {
             return NextResponse.json({ exists: false });
         }

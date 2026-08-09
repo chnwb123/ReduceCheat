@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/general/navigation/top-menu/page";
 import { UserDB } from "@/app/api/mongodb/write/admin/create-one-user/route";
+import { AdminPageProps } from "@/app/admin/[adminId]/page";
+import { Loading } from "@/components/general/animation/loading/page";
 import Swal from "sweetalert2";
 
 export type Student = {
@@ -43,7 +45,7 @@ export type User = {
   roleId?: string;
   username?: string;
   password: string;
-  reenterPassword?: string
+  reenterPassword?: string;
 };
 
 export const userTypes: RoleType[] = [
@@ -53,12 +55,30 @@ export const userTypes: RoleType[] = [
   "Invigilator",
 ];
 
-
-export default function AdminCreateUserPage() {
+export default function AdminCreateUserPage({
+  params,
+  searchParams,
+}: AdminPageProps) {
+  const [adminId, setAdminId] = useState<UserDB["role_id"]>("");
+  const [name, setName] = useState<UserDB["name"]>("");
   const [users, setUsers] = useState<UserDB[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<UserDB["_id"] | null>(
     null,
   );
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const getParams = async () => {
+      const { adminId } = await params;
+      const { name } = await searchParams;
+      console.log("Admin ID from params:", adminId);
+      console.log("Name from searchParams:", name);
+      setAdminId(adminId);
+      setName(name);
+    };
+
+    getParams();
+  }, [params, searchParams]);
 
   useEffect(() => {
     const getUsers = async () => {
@@ -86,6 +106,7 @@ export default function AdminCreateUserPage() {
   const handleSettleUserAccount = async (
     e: React.FormEvent<HTMLFormElement>,
   ) => {
+    setIsLoading(true);
     e.preventDefault();
     console.log("Settling user account for ID:", selectedUserId);
     const detailsToBeSentEmail = {
@@ -128,6 +149,7 @@ export default function AdminCreateUserPage() {
             console.log("Email sent successfully:", sentData);
             const user = users.find((u) => u._id === selectedUserId);
             if (user) {
+              setIsLoading(false);
               Swal.fire({
                 title: "Successful Settled!",
                 text: "You have settled " + user.name + "'s account.",
@@ -139,10 +161,12 @@ export default function AdminCreateUserPage() {
             }
           }
         } catch (error) {
+          setIsLoading(false);
           console.error("Failed to update course:", error);
         }
       }
     } catch (error) {
+      setIsLoading(false);
       console.error("Failed to update user:", error);
     }
   };
@@ -150,33 +174,27 @@ export default function AdminCreateUserPage() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-blue-900 via-indigo-500 to-blue-600 p-4">
       <Navbar navItems={[
-        { label: "Home", href: "/admin" },
-        { label: "Manage Course", href: "/admin/manage-course" },
-        { label: "Manage User", href: "/admin/manage-user" },
-        { label: "About Admin", href: "/admin/about-us" }
-      ]} />
-      <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
+          { label: "Home", href: `/admin/${adminId}?name=${name}` },
+          {
+            label: "Manage Course",
+            href: `/admin/manage-course/${adminId}?name=${name}`,
+          },
+          {
+            label: "Manage User",
+            href: `/admin/manage-user/${adminId}?name=${name}`,
+          },
+          {
+            label: "About Admin",
+            href: `/admin/about-admin/${adminId}?name=${name}`,
+          },
+        ]} />
         {/* Authenticating Modal */}
         <div
           id="editModal"
           className={`${selectedUserId ? "block" : "hidden"} fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm`}
         >
           {/* <!-- Modal Content Box --> */}
-          <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl transition-all">
-            {/* <!-- Header --> */}
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-xl font-semibold text-gray-900">
-                Settle User Account
-              </h3>
-              <button
-                id="closeModalX"
-                className="text-2xl font-bold text-gray-400 hover:text-gray-600"
-                onClick={() => setSelectedUserId(null)}
-              >
-                &times;
-              </button>
-            </div>
-
+          <div className="relative w-full max-w-md rounded-xl bg-white px-4 py-1 shadow-2xl transition-all">
             {/* <!-- View Form Body --> */}
             <form className="mt-4 space-y-4" onSubmit={handleSettleUserAccount}>
               <div>
@@ -324,11 +342,12 @@ export default function AdminCreateUserPage() {
                 >
                   Settle
                 </button>
+                {isLoading && <Loading />}
               </div>
             </form>
           </div>
         </div>
-
+      <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white">
             Manage User

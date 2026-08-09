@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { UserDB } from "@/app/api/mongodb/write/admin/create-one-user/route";
 import { CourseDB } from "@/app/api/mongodb/write/admin/create-one-course/route";
 import { Navbar } from "@/components/general/navigation/top-menu/page";
+import { AdminPageProps } from "@/app/admin/[adminId]/page";
 
 export type Course = {
   id?: number;
@@ -322,7 +323,12 @@ function CourseDetailsDisplayPanel({
               />
             </div>
 
-            <button type="submit" className="rounded border-2 bg-blue-800 px-2 py-1 transition hover:bg-blue-600">Update Course</button>
+            <button
+              type="submit"
+              className="rounded border-2 bg-blue-800 px-2 py-1 transition hover:bg-blue-600"
+            >
+              Update Course
+            </button>
             <button
               type="button"
               onClick={() => setEditingId({ editingId: null })}
@@ -399,7 +405,9 @@ function CourseDetailsDisplayPanel({
   );
 }
 
-function CreateCoursePanel() {
+function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
+  const [adminId, setAdminId] = useState<UserDB["role_id"]>("");
+  const [name, setName] = useState<UserDB["name"]>("");
   const [courseDetails, setCourseDetails] = useState<Course>({
     name: "",
     description: "",
@@ -421,6 +429,19 @@ function CreateCoursePanel() {
 
   console.log("Course Details:", courseDetails);
   console.log("Courses: ", courses);
+
+  useEffect(() => {
+    const getParams = async () => {
+      const { adminId } = await params;
+      const { name } = await searchParams;
+      console.log("Admin ID from params:", adminId);
+      console.log("Name from searchParams:", name);
+      setAdminId(adminId);
+      setName(name);
+    };
+
+    getParams();
+  }, [params, searchParams]);
 
   useEffect(() => {
     const getStudents = async () => {
@@ -556,10 +577,19 @@ function CreateCoursePanel() {
       <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-blue-900 via-indigo-500 to-blue-600 p-4">
         <Navbar
           navItems={[
-            { label: "Home", href: "/admin" },
-            { label: "Manage Course", href: "/admin/manage-course" },
-            { label: "Manage User", href: "/admin/manage-user" },
-            { label: "About Admin", href: "/admin/about-us" },
+            { label: "Home", href: `/admin/${adminId}?name=${name}` },
+            {
+              label: "Manage Course",
+              href: `/admin/manage-course/${adminId}?name=${name}`,
+            },
+            {
+              label: "Manage User",
+              href: `/admin/manage-user/${adminId}?name=${name}`,
+            },
+            {
+              label: "About Admin",
+              href: `/admin/about-admin/${adminId}?name=${name}`,
+            },
           ]}
         />
         <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
@@ -570,7 +600,9 @@ function CreateCoursePanel() {
           </div>
           <div className="tracking-tight text-white">
             <form onSubmit={handleSubmit}>
-              <h1 className="mt-5 text-lg font-medium text-white">Course Name</h1>
+              <h1 className="mt-5 text-lg font-medium text-white">
+                Course Name
+              </h1>
               <input
                 id={"course-name-input"}
                 className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
@@ -583,7 +615,9 @@ function CreateCoursePanel() {
                 name="courseName"
               />
 
-              <h1 className="mt-5 text-lg font-medium text-white">Course Description</h1>
+              <h1 className="mt-5 text-lg font-medium text-white">
+                Course Description
+              </h1>
               <input
                 id={"course-description-input"}
                 className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
@@ -688,10 +722,10 @@ function CreateCoursePanel() {
   );
 }
 
-export default function AdminManageCoursePage2() {
+export default function AdminManageCoursePage({ params, searchParams }: AdminPageProps) {
   return (
     <div>
-      <CreateCoursePanel />
+      <CreateCoursePanel params={params} searchParams={searchParams} />
     </div>
   );
 }

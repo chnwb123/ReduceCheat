@@ -8,11 +8,15 @@ export async function GET(
 ) {
     try {
         const { instructorId } = await params;
-        console.log(instructorId);
+        console.log("Instructor Id: " + instructorId);
         const client = await clientPromise;
         const db = client.db("reduceCheat");
-        const courses = await db.collection("COURSE_T").find({ instructor_id: new ObjectId(instructorId) }).toArray();
-
+        const user = await db.collection("USER_T").findOne({
+            role_id: instructorId
+        });
+        const instructorID = user?._id;
+        console.log("Object Instructor ID for getting courses:" + instructorId);
+        const courses = await db.collection("COURSE_T").find({ instructor_id: new ObjectId(instructorID) }).toArray();
         return NextResponse.json(courses);
     } catch (error) {
         console.error("Failed to fetch courses:", error);

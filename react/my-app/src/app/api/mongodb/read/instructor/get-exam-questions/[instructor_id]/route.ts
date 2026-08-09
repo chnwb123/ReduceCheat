@@ -10,8 +10,13 @@ export async function GET(
         console.log(instructor_id);
         const client = await clientPromise;
         const db = client.db("reduceCheat");
+        const user = await db.collection("USER_T").findOne({
+            role_id: instructor_id
+        });
+        const instructorId = user?._id;
+        console.log("Object Instructor ID for getting exam questions:" + instructorId);
         const query = {
-            question_id: instructor_id,
+            instructor_id: instructorId,
         };
         const examQuestions = await db.collection("EXAM_QUESTION_T").find(query).toArray();
         return NextResponse.json(examQuestions);

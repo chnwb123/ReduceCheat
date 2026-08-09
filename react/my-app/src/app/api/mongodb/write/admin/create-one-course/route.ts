@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { Course } from "@/app/admin/manage-course/page";
+import { Course } from "@/app/admin/manage-course/[adminId]/page";
 import { UserDB } from "../create-one-user/route";
 
 export interface CourseDB {
