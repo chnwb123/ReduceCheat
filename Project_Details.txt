@@ -22,3 +22,11 @@ python -m uvicorn main:socket_app --reload --port 8000
 Uses rooms, when app 1 emits, the server use io.to.emit() to pass to app 2
 
 - Figure out how to format the data to be sent to the exam unit, for every 3 sec of python, send emit to exam unit
+
+
+## To-do
+- pyside6 login page view bookmark
+- if start, the python ai code must be run, the ui of exam answering should be fixed
+- add ai object detection 
+- send data to react client, client must analyse each student data
+- on student answering develop start time, lockdown feature

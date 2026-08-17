@@ -6,6 +6,8 @@ import os
 import socketio
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+import bcrypt
+from fastapi.encoders import jsonable_encoder
 load_dotenv(r"c:\FY_FYP\ReduceCheat\backend\FastAPI\.env.local")
 
 class LoginData(BaseModel):
@@ -97,11 +99,49 @@ async def login(data: LoginData):
     user = await db["USER_T"].find_one({"username": data.username})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-
-    if user.get("password") != data.password:
+    hashed_password = user.get("password")
+    user_input_bytes = data.password.encode('utf-8')
+    stored_hash_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
+    is_valid = bcrypt.checkpw(user_input_bytes, stored_hash_bytes)
+    if not is_valid:
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     return {"message": "Login successful", "user": serialize_doc(user)}
+
+@api.get("/get-upcoming-exams/{role_id}")
+async def get_upcoming_exams(role_id: str):
+    try:
+        print(f"Fetched role_id: {role_id} from login")
+        student = await db["USER_T"].find_one({"role_id": role_id})
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+        studentId = ObjectId(student["_id"])
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "COURSE_T",
+                    "localField": "course_id",
+                    "foreignField": "_id",
+                    "as": "course_plus_exam_details"
+                }
+            },
+            # {"$unwind": "$course_plus_exam_details"},
+            {
+                "$match": {
+                    "course_plus_exam_details.student_ids": studentId,
+                    # Optional upcoming filter if you have exam datetime field:
+                    # "exam_datetime": {"$gte": datetime.now(timezone.utc)}
+                }
+            }
+        ]
+        exams = await db["EXAM_QUESTION_T"].aggregate(pipeline).to_list(length=1000)
+        # print(exams)
+        for exam in exams:
+            print(f"Exam ID: {exam['_id']}, Course ID: {exam['course_id']}, Exam Details: {exam.get('course_plus_exam_details', [])}")
+        return jsonable_encoder(exams, custom_encoder={ObjectId: str})
+    except Exception as error:
+        print(f"Error fetching upcoming exams: {error}")
+        raise HTTPException(status_code=500, detail=str(error))
 
 @api.get("/exam/{exam_id}")
 def index(exam_id: int):

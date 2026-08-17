@@ -97,7 +97,7 @@ export default function StudentViewExamPage({
                 <p>{exam.start_date_time?.slice(0, 10)}</p>
                 <p>Exam Time:</p>
                 <p>
-                  {exam.start_date_time?.slice(11, -3)} -{" "}
+                  {exam.start_date_time?.slice(11)} -{" "}
                   {exam.end_date_time?.slice(11)}
                 </p>
                 <p>Exam Duration:</p>
