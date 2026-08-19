@@ -5,7 +5,7 @@ import { ExamData, ObjectiveQuestionData, SubjectiveQuestionData, SectionData } 
 
 export interface ExamQuestionDB {
     _id?: ObjectId;
-    instructor_id: ExamData["instructor_id"];
+    instructor_id: ObjectId | ExamData["instructor_id"];
     course_id: ObjectId | ExamData["course_id"];
     title: ExamData["title"];
     description: ExamData["description"];
@@ -35,6 +35,12 @@ export async function POST(request: Request) {
         const client = await clientPromise;
         const db = client.db("reduceCheat");
 
+        let instructorRoleId = examData.instructor_id;
+        const user = await db.collection("USER_T").findOne({
+            role_id: instructorRoleId
+        });
+        instructorRoleId = user?._id;
+
         const examQuestions = db.collection<ExamQuestionDB>("EXAM_QUESTION_T");
 
         const now = new Date();
@@ -44,7 +50,7 @@ export async function POST(request: Request) {
 
         const newExamQuestion = await examQuestions.insertOne({
             title: examData.title,
-            instructor_id: examData.instructor_id,
+            instructor_id: new ObjectId(instructorRoleId),
             course_id: new ObjectId(examData.course_id),
             description: examData.description,
             start_date_time: examData.start_date_time,

@@ -17,6 +17,7 @@ export default function InstructorCreateQuestionPage({
   const [name, setName] = useState<UserDB["name"]>("");
   const [examQuestions, setExamQuestions] = useState<ExamQuestionDB[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     const getParams = async () => {
@@ -53,7 +54,7 @@ export default function InstructorCreateQuestionPage({
       }
     };
     getExamQuestions();
-  }, [instructorId]);
+  }, [instructorId, isSubmitted]);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-blue-900 via-indigo-500 to-blue-600 p-4">
@@ -72,7 +73,11 @@ export default function InstructorCreateQuestionPage({
             Create Exam Questions
           </h1>
         </div>
-        <CreateQuestionForm instructorId={String(instructorId)} />
+        <CreateQuestionForm
+          instructorId={String(instructorId)}
+          setIsSubmitted={setIsSubmitted}
+          isSubmitted={isSubmitted}
+        />
 
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white">

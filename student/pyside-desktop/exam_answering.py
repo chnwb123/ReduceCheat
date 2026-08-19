@@ -1,9 +1,11 @@
+from pathlib import Path
+import subprocess
 import sys
 import json
-from PySide6.QtWidgets import QApplication, QButtonGroup, QFormLayout, QListWidget, QMainWindow, QLabel, QVBoxLayout, QWidget, QListWidgetItem, QHBoxLayout, QPushButton, QRadioButton, QPlainTextEdit
+from PySide6.QtWidgets import QApplication, QButtonGroup, QFormLayout, QListWidget, QMainWindow, QLabel, QScrollArea, QSizePolicy, QVBoxLayout, QWidget, QListWidgetItem, QHBoxLayout, QPushButton, QRadioButton, QPlainTextEdit
 from PySide6.QtCore import Qt, QTimer, QDateTime, QEventLoop, QSize, QThread, Signal, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QLinearGradient, QColor, QPalette, QBrush
 
 # 1. Background Worker to make network requests without freezing the UI
 class FetchDataWorker(QThread):
@@ -35,28 +37,43 @@ class FetchDataWorker(QThread):
 
 # 2. Main PySide6 Window
 class ExamAnsweringWindow(QMainWindow):
-    def __init__(self, exam_start, exam_end, exam_question_id=None, *args, **kwargs):
+    def __init__(self, exam_question_id=None, start_date_time=None, end_date_time=None, duration=None, date_time=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.exam_locked = True
-        self.exam_start = QDateTime.fromString(exam_start, Qt.ISODate)
-        self.exam_end = QDateTime.fromString(exam_end, Qt.ISODate)
+        self.exam_locked = False
+        self.monitor_process = None
+        self.run_AI_background()
+        self.currentTime = QDateTime.currentDateTime()
+        self.examStartDateTime = self.formatDateTime(start_date_time)
+        self.examEndDateTime = self.formatDateTime(end_date_time)
+        print("Exam Start DateTime: ", self.examStartDateTime)
+        print("Exam End DateTime: ", self.examEndDateTime)
         self.exam_question_id = exam_question_id
         print("Fetched exam_question_id: ", self.exam_question_id)
         self.setWindowTitle("Student Answering Page")
         # self.setGeometry(100, 100, 400, 200)
-        # self.setFixedSize(1200, 850)
+        self.setFixedSize(1200, 850)
 
-        self.setWindowFlags(
-            Qt.Window |
-            Qt.FramelessWindowHint |
-            Qt.WindowStaysOnTopHint
-        )
+        self.countdownTimer = QTimer(self)
+        self.countdownTimer.timeout.connect(self.updateTimeRemaining)
+        self.countdownTimer.start(1000)
+
+        # self.setWindowFlags(
+        #     Qt.Window |
+        #     Qt.FramelessWindowHint |
+        #     Qt.WindowStaysOnTopHint
+        # )
         
-        self.setWindowState(Qt.WindowFullScreen)
+        # self.setWindowState(Qt.WindowFullScreen)
         # self.setCursor(Qt.BlankCursor)
 
-        # self.grabKeyboard()   # capture keyboard input inside app
-        # self.grabMouse()      # optional: capture mouse
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0.0, QColor("#1e1e2f"))
+        gradient.setColorAt(1.0, QColor("#111119"))
+
+        palette = self.palette()
+        palette.setBrush(QPalette.Window, QBrush(gradient))
+        self.setPalette(palette)
+        self.setAutoFillBackground(True)
 
         self.lock_timer = QTimer(self)
         self.lock_timer.timeout.connect(self.check_exam_time)
@@ -68,55 +85,121 @@ class ExamAnsweringWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central_widget)
 
         # Add a formLayout to the central widget for better alignment
-        self.form_layout = QFormLayout()
-        self.layout.addLayout(self.form_layout)
+        formLayout = QFormLayout()
+        self.layout.addLayout(formLayout)
 
         # Fonts for labels and texts
-        titleFont = QFont("Arial", 12, QFont.Bold)
-        textFont = QFont("Arial", 12)
+        titleFont = QFont("Segoe UI", 12, QFont.Bold)
+        textFont = QFont("Segoe UI", 12)
 
         # Exam Title
         examTitleLabel = QLabel("Exam Title: ")
         examTitleLabel.setFont(titleFont)
+        examTitleLabel.setObjectName("HeadingColor")
         self.examTitle = QLabel("")  
+        self.examTitle.setObjectName("HeadingColor")
         self.examTitle.setFont(textFont)
 
         # Exam Description
         examDescriptionLabel = QLabel("Exam Description: ")
         examDescriptionLabel.setFont(titleFont)
+        examDescriptionLabel.setObjectName("HeadingColor")
         self.examDescription = QLabel("")  
+        self.examDescription.setObjectName("HeadingColor")
         self.examDescription.setFont(textFont)
 
-        # Exam Hour
-        examHourLabel = QLabel("Exam Hour: ")
-        examHourLabel.setFont(titleFont)
-        self.examHour = QLabel("")  
-        self.examHour.setFont(textFont)
+        # Exam Date and Time
+        examDateTimeLabel = QLabel("Exam Date and Time: ")
+        examDateTimeLabel.setFont(titleFont)
+        examDateTimeLabel.setObjectName("HeadingColor")
+        self.examDateTime = QLabel(date_time)  
+        self.examDateTime.setObjectName("HeadingColor")
+        self.examDateTime.setFont(textFont)
 
-        # Exam Hour
+        # Exam Duration
+        examDurationLabel = QLabel("Exam Duration: ")
+        examDurationLabel.setFont(titleFont)
+        examDurationLabel.setObjectName("HeadingColor")
+        self.examDuration = QLabel(duration)
+        self.examDuration.setObjectName("HeadingColor") 
+        self.examDuration.setFont(textFont)
+
+        # Number of Sections
         numOfSectionLabel = QLabel("Number of Sections: ")
         numOfSectionLabel.setFont(titleFont)
+        numOfSectionLabel.setObjectName("HeadingColor")  
         self.numOfSections = QLabel("")  
+        self.numOfSections.setObjectName("HeadingColor")
         self.numOfSections.setFont(textFont)
 
-        self.form_layout.addRow(examTitleLabel, self.examTitle)
-        self.form_layout.addRow(examDescriptionLabel, self.examDescription)
-        self.form_layout.addRow(examHourLabel, self.examHour)
-        self.form_layout.addRow(numOfSectionLabel, self.numOfSections)
+        # Time Remaining
+        timeRemainingLabel = QLabel("Time Remaining: ")
+        timeRemainingLabel.setFont(titleFont)
+        timeRemainingLabel.setObjectName("HeadingColor")
+        self.timeRemaining = QLabel("")  
+        self.timeRemaining.setObjectName("HeadingColor")    
+        self.timeRemaining.setFont(textFont)
 
-        self.layout.addStretch()  # Add stretch to push the form layout to the top
+        # Scroll Area for Exam Question Sections
+        self.scrollArea = QScrollArea()
+        self.scrollArea.setWidgetResizable(True) 
+        self.scrollArea.setFocusPolicy(Qt.StrongFocus)
+        self.scrollWidget = QWidget()
+        self.scrollLayout = QVBoxLayout(self.scrollWidget)
+        self.scrollArea.setWidget(self.scrollWidget)
+        self.layout.addWidget(self.scrollArea, 1)
+
+        formLayout.addRow(examTitleLabel, self.examTitle)
+        formLayout.addRow(examDescriptionLabel, self.examDescription)
+        formLayout.addRow(examDateTimeLabel, self.examDateTime)
+        formLayout.addRow(examDurationLabel, self.examDuration)
+        formLayout.addRow(numOfSectionLabel, self.numOfSections)
+        formLayout.addRow(timeRemainingLabel, self.timeRemaining)
 
         # 3. Start data fetch automatically
         self.load_data_from_fastapi()
+        self.apply_styles()
+
+    def run_AI_background(self):
+        currentFilePath = Path(__file__).resolve().parent
+        targetAIfilePath = currentFilePath.parent / "AI-background" / "main.py"
+
+        self.monitor_process = subprocess.Popen(
+            [sys.executable, str(targetAIfilePath)]
+        )
+
+    def updateTimeRemaining(self):
+        now = QDateTime.currentDateTime()
+        endDateTime = QDateTime.fromString(self.examEndDateTime, Qt.DateFormat.ISODate)
+        remaining = now.secsTo(endDateTime)
+
+        if remaining > 0:
+            hours = remaining // 3600
+            minutes = (remaining % 3600) // 60
+            seconds = remaining % 60
+            self.timeRemaining.setText(f"{hours:02d}:{minutes:02d}:{seconds:02d}")
+        else:
+            self.timeRemaining.setText("00:00:00")
+            self.end_exam()  # End the exam when time is up
+
+    def formatDateTime(self, dateTimeStr):
+        qdt = QDateTime.fromString(
+            dateTimeStr,
+            "yyyy-MM-dd h:mm AP"
+        )  
+        formattedDateTime = qdt.toString(Qt.ISODate)
+        return formattedDateTime
 
     def check_exam_time(self):
         now = QDateTime.currentDateTime()
+        startDateTime = QDateTime.fromString(self.examStartDateTime, Qt.DateFormat.ISODate)
+        endDateTime = QDateTime.fromString(self.examEndDateTime, Qt.DateFormat.ISODate)
 
-        if now < self.exam_start:
+        if now < startDateTime:
             # exam not started yet
             return
 
-        if now >= self.exam_end:
+        if now >= endDateTime:
             self.end_exam()
 
     def keyPressEvent(self, event):
@@ -134,6 +217,12 @@ class ExamAnsweringWindow(QMainWindow):
         if self.exam_locked:
             event.ignore()
         else:
+            if self.monitor_process is not None:
+                self.monitor_process.terminate()
+            try:
+                self.monitor_process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.monitor_process.kill()
             event.accept()
 
     def end_exam(self):
@@ -141,14 +230,14 @@ class ExamAnsweringWindow(QMainWindow):
 
         self.lock_timer.stop()
 
-        self.releaseKeyboard()
-        self.releaseMouse()
+        # self.releaseKeyboard()
+        # self.releaseMouse()
 
         self.setWindowFlags(Qt.Window)
         self.showNormal()
         self.show()
 
-        self.setCursor(Qt.ArrowCursor)
+        # self.setCursor(Qt.ArrowCursor)
 
         self.setFocus(Qt.OtherFocusReason)
         self.activateWindow()
@@ -158,160 +247,186 @@ class ExamAnsweringWindow(QMainWindow):
 
     def load_data_from_fastapi(self):
         # Assuming your local FastAPI is running on http://127.0.0.1:8000
-        self.worker = FetchDataWorker("http://127.0.0.1:8000/exam-questions/" + (self.exam_question_id if self.exam_question_id else ""))
+        self.worker = FetchDataWorker("http://127.0.0.1:8000/exam-question/" + (self.exam_question_id if self.exam_question_id else ""))
         self.worker.data_ready.connect(self.update_ui)
         self.worker.start()
 
     def update_ui(self, data_dict):
         # Update the home page with the fetched data
         if "error" in data_dict:
-            self.label.setText(data_dict["error"])
+            self.clear_scroll_content()
+            self.scrollLayout.addWidget(QLabel(f"Failed to load exam: {data_dict['error']}"))
         else:
-                # self.add_item_with_button(data_dict.get('_id', 'N/A'), data_dict.get('title', 'N/A'), data_dict.get('description', 'N/A'), data_dict.get('date', 'N/A'))
-                print("Data fetched: ", data_dict)
-                self.examTitle.setText(data_dict.get('title', ''))
-                self.examDescription.setText(data_dict.get('description', ''))
-                self.examHour.setText(data_dict.get('date', ''))
-                self.numOfSections.setText(str(data_dict.get('number_of_section', '')))
-                self.create_exam_section(data_dict.get('sections', []))
+            # self.add_item_with_button(data_dict.get('_id', 'N/A'), data_dict.get('title', 'N/A'), data_dict.get('description', 'N/A'), data_dict.get('date', 'N/A'))
+            print("Data fetched: ", data_dict)
+            self.examTitle.setText(data_dict.get('title', ''))
+            self.examDescription.setText(data_dict.get('description', ''))
+            self.numOfSections.setText(str(data_dict.get('number_of_section', '')))
+            self.create_exam_section(data_dict.get('sections', []))
     
-    def create_exam_section(self, section_data = []):
+    def create_exam_section(self, section_data=None):
+        # Put every section inside QScrollArea.
+        self.clear_scroll_content()
+
+        if not section_data:
+            self.scrollLayout.addWidget(QLabel("This exam has no sections."))
+            self.scrollLayout.addStretch()
+            return
+
         for section in section_data:
-            sectionId = section.get('id', 'N/A')
-            sectionTitle = section.get('title', 'N/A')
-            sectionDescription = section.get('description', 'N/A')
+            row_widget = self.create_section_widget(section)
+            self.scrollLayout.addWidget(row_widget)
 
-            titleFont = QFont("Arial", 12, QFont.Bold)
-            textFont = QFont("Arial", 12)
+        self.scrollLayout.addStretch()
 
-            # Section Label and Text
-            sectionLabel = QLabel("Section " + str(sectionId))
-            sectionLabel.setFont(titleFont)
+    def clear_scroll_content(self):
+        while self.scrollLayout.count():
+            item = self.scrollLayout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
 
-            # Section Title Label and Text
-            sectionTitleLabel = QLabel("Section Title: ")
-            sectionTitleLabel.setFont(titleFont)
-            sectionTitleText = QLabel(sectionTitle)  
-            sectionTitleText.setFont(textFont)
+    def create_section_widget(self, section):
+        row_widget = QWidget()
+        formLayout = QFormLayout(row_widget)
+        formLayout.setContentsMargins(5, 5, 5, 25)
 
-            # Section Description Label and Text
-            sectionDescriptionLabel = QLabel("Section Description: ")
-            sectionDescriptionLabel.setFont(titleFont)
-            sectionDescriptionText = QLabel(sectionDescription)  
-            sectionDescriptionText.setFont(textFont)
+        sectionId = section.get('id', 'N/A')
+        sectionTitle = section.get('title', 'N/A')
+        sectionDescription = section.get('description', 'N/A')
 
-            # Objective Question Label
-            ObjectiveSectionLabel = QLabel("Objective Questions: ")
-            ObjectiveSectionLabel.setFont(titleFont)
+        titleFont = QFont("Segoe UI", 12, QFont.Bold)
+        textFont = QFont("Segoe UI", 12)
 
-            # Subjective Question Label
-            SubjectiveSectionLabel = QLabel("Subjective Questions: ")
-            SubjectiveSectionLabel.setFont(titleFont)
+        # Section Label and Text
+        sectionLabel = QLabel("Section " + str(sectionId))
+        sectionLabel.setFont(titleFont)
 
-            self.form_layout.addRow(sectionLabel, QLabel("")) 
-            self.form_layout.addRow(sectionTitleLabel, sectionTitleText)
-            self.form_layout.addRow(sectionDescriptionLabel, sectionDescriptionText)
-            self.form_layout.addRow(ObjectiveSectionLabel, QLabel(""))
+        # Section Title Label and Text
+        sectionTitleLabel = QLabel("Section Title: ")
+        sectionTitleLabel.setFont(titleFont)
+        sectionTitleText = QLabel(sectionTitle)  
+        sectionTitleText.setFont(textFont)
+        sectionTitleText.setWordWrap(True)
 
-            objectiveNumberIncrementer = 1
-            for objective in section.get('objective_questions', []):
+        # Section Description Label and Text
+        sectionDescriptionLabel = QLabel("Section Description: ")
+        sectionDescriptionLabel.setFont(titleFont)
+        sectionDescriptionText = QLabel(sectionDescription)  
+        sectionDescriptionText.setFont(textFont)
+        sectionDescriptionText.setWordWrap(True)
+
+        # Objective Question Label
+        ObjectiveSectionLabel = QLabel("Objective Questions: ")
+        ObjectiveSectionLabel.setFont(titleFont)
+
+        # Subjective Question Label
+        SubjectiveSectionLabel = QLabel("Subjective Questions: ")
+        SubjectiveSectionLabel.setFont(titleFont)
+
+        formLayout.addRow(sectionLabel)
+        formLayout.addRow(sectionTitleLabel, sectionTitleText)
+        formLayout.addRow(sectionDescriptionLabel, sectionDescriptionText)
+        formLayout.addRow(ObjectiveSectionLabel)
+
+        sectionTitleText.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Minimum
+        )
+
+        sectionDescriptionText.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Minimum
+        )
+
+        # Objective Questions
+        objectiveNumberIncrementer = 1
+        for objective in section.get('objective_questions', []):
                 
-                objectiveTitle = objective.get('title', 'N/A')
-                objectiveNumOfOptions = objective.get('numOptions', 'N/A')
-                objectiveOptions = objective.get('options', [])
-                objectiveCorrectAnswer = objective.get('correctAnswer', 'N/A')
-                objectiveMarks = objective.get('marks', 'N/A')
+            objectiveTitle = objective.get('title', 'N/A')
+            objectiveNumOfOptions = objective.get('numOptions', 'N/A')
+            objectiveOptions = objective.get('options', [])
+            objectiveCorrectAnswer = objective.get('correctAnswer', 'N/A')
+            objectiveMarks = objective.get('marks', 'N/A')
 
-                # Objective Index and Title
-                objectiveText = QLabel(str(objectiveNumberIncrementer) + ". " + objectiveTitle)
-                objectiveText.setFont(textFont)
-                objectiveMarksText = QLabel(" (Marks: " + str(objectiveMarks) + ")")
-                objectiveMarksText.setFont(textFont)
-                
-                self.form_layout.addRow(objectiveText, objectiveMarksText)
+            # Objective Index and Title
+            objectiveText = QLabel(str(objectiveNumberIncrementer) + ". " + objectiveTitle + " (Marks: " + str(objectiveMarks) + ")")
+            objectiveText.setFont(textFont)
+            objectiveText.setWordWrap(True)
 
-                # Unique group for radio buttons to ensure only one can be selected
-                group = QButtonGroup(self)  # Uncomment if you want to enforce single selection
-                group.setExclusive(True)  # Ensure only one radio button can be selected at a time
+            objectiveText.setSizePolicy(
+                QSizePolicy.Expanding,
+                QSizePolicy.Minimum
+            )
 
-                # Objective Options
-                for idx, option in enumerate(objectiveOptions):
-                    optionText = chr(65 + idx) + ". " + option # A. Option, B. Option, etc.
-                    radioButton = QRadioButton(optionText)
-                    radioButton.toggled.connect(lambda checked, index=idx, opt=option, objQuesNumber=objectiveNumberIncrementer, sectionNum=sectionId: self.on_radio_button_toggled(checked, index, opt, objQuesNumber, sectionNum))
-                    group.addButton(radioButton)
-                    self.form_layout.addRow(radioButton, QLabel(""))  # Display the option text
+            formLayout.addRow(objectiveText)
 
-                objectiveNumberIncrementer += 1
-                
-            # Subjective Questions
-            subjectiveNumberIncrementer = 1
-            self.form_layout.addRow(SubjectiveSectionLabel, QLabel(""))
-            for subjective in section.get('subjective_questions', []):
-                subjectiveTitle = subjective.get('title', 'N/A')
-                subjectiveCorrectAnswer = subjective.get('correctAnswer', 'N/A')
-                subjectiveMarks = subjective.get('marks', 'N/A')
+            # Unique group for radio buttons to ensure only one can be selected
+            group = QButtonGroup(row_widget)
+            group.setExclusive(True)  # Ensure only one radio button can be selected at a time
 
-                # Subjective Index and Title
-                subjectiveText = QLabel(str(subjectiveNumberIncrementer) + ". " + subjectiveTitle)
-                subjectiveText.setFont(textFont)
-                subjectiveMarksText = QLabel(" (Marks: " + str(subjectiveMarks) + ")")
-                subjectiveMarksText.setFont(textFont)
-                self.form_layout.addRow(subjectiveText, subjectiveMarksText)
-                textArea = QPlainTextEdit()
-                textArea.setPlaceholderText("Write your answer here...")
-                textArea.textChanged.connect(lambda textArea=textArea, subQuesNumber=subjectiveNumberIncrementer, sectionNum=sectionId: self.on_text_changed(textArea.toPlainText(), subQuesNumber, sectionNum))
-                self.form_layout.addRow(textArea, QLabel(""))  # Display the text area for answer
-                subjectiveNumberIncrementer += 1
+            # Objective Options
+            for idx, option in enumerate(objectiveOptions):
+                optionText = chr(65 + idx) + ". " + option # A. Option, B. Option, etc.
+                radioButton = QRadioButton(optionText)
+                radioButton.setFont(textFont)
+                radioButton.setSizePolicy(
+                    QSizePolicy.Expanding,
+                    QSizePolicy.Minimum
+                )   
+                radioButton.toggled.connect(lambda checked, index=idx, opt=option, objQuesNumber=objectiveNumberIncrementer, sectionNum=sectionId: self.on_radio_button_toggled(checked, index, opt, objQuesNumber, sectionNum))
+                group.addButton(radioButton)
+                formLayout.addRow(radioButton)  # Display the option text
+
+            objectiveNumberIncrementer += 1
+
+        # Subjective Questions
+        subjectiveNumberIncrementer = 1
+        formLayout.addRow(SubjectiveSectionLabel)
+        for subjective in section.get('subjective_questions', []):
+            subjectiveTitle = subjective.get('title', 'N/A')
+            subjectiveCorrectAnswer = subjective.get('correctAnswer', 'N/A')
+            subjectiveMarks = subjective.get('marks', 'N/A')
+
+            # Subjective Index and Title
+            subjectiveText = QLabel(str(subjectiveNumberIncrementer) + ". " + subjectiveTitle + " (Marks: " + str(subjectiveMarks) + ")")
+            subjectiveText.setFont(textFont)
+            subjectiveText.setWordWrap(True)
+            subjectiveText.setSizePolicy(
+                QSizePolicy.Expanding,
+                QSizePolicy.Minimum
+            )
+            formLayout.addRow(subjectiveText)
+            textArea = QPlainTextEdit()
+            textArea.setFont(textFont)
+            textArea.setPlaceholderText("Write your answer here...")
+            textArea.textChanged.connect(lambda textArea=textArea, subQuesNumber=subjectiveNumberIncrementer, sectionNum=sectionId: self.on_text_changed(textArea.toPlainText(), subQuesNumber, sectionNum))
+            formLayout.addRow(textArea)  # Display the text area for answer
+            subjectiveNumberIncrementer += 1
+
+        return row_widget
             
-
     def on_radio_button_toggled(self, checked, index, option, objQuesNumber, sectionNum):
         if checked:
             print(f"Selected option: {index}. {option} for Objective Question Number: {objQuesNumber} in Section: {sectionNum}")
 
     def on_text_changed(self, text, subQuesNumber, sectionNum):
-        print(f"Text changed for Question {subQuesNumber} in Section {sectionNum}: {text}")
+        print(f"Text changed for Subjective Question {subQuesNumber} in Section {sectionNum}: {text}")
 
-    def add_item_with_button(self, exam_question_id, text, description, date):
-        # 2. Create a base QListWidgetItem
-        item = QListWidgetItem()
-        self.list_widget.addItem(item)
-
-        # 3. Create the custom container widget and horizontal layout
-        row_widget = QWidget()
-        layout = QFormLayout(row_widget)
-        layout.setContentsMargins(5, 5, 5, 25)  # Tighten padding inside the row
-
-        # Bold font for labels
-        font = QFont("Arial", 8, QFont.Bold)
-
-        # 4. Create row content (Label + Button)
-        questionLabel = QLabel("Question:")
-        questionLabel.setFont(font)
-        questionText = QLabel(text)
-        descriptionLabel = QLabel("Description:")
-        descriptionLabel.setFont(font)
-        descriptionText = QLabel(description)
-        dateLabel = QLabel("Date:")
-        dateLabel.setFont(font)
-        dateText = QLabel(date)
-        button = QPushButton("Join Exam")
-        button.setFont(font)
-        
-        # Connect button click event and pass the specific item context
-        button.clicked.connect(lambda: self.handle_button_click(item, exam_question_id))
-
-        # 5. Add elements to layout (with a stretch to push button to the right)
-        layout.addRow(questionLabel, questionText)
-        layout.addRow(descriptionLabel, descriptionText)
-        layout.addRow(dateLabel, dateText)
-        layout.addRow("", button)
-
-        # 6. Adjust row size hint so the list widget wraps the custom container properly
-        item.setSizeHint(row_widget.sizeHint())
-
-        # 7. Associate the custom widget with the QListWidgetItem
-        self.list_widget.setItemWidget(item, row_widget)
+    def apply_styles(self):
+                self.setStyleSheet("""
+                    QLabel#HeadingColor {
+                        color: #ffffff;
+                    }
+                    QPushButton#Button {
+                        padding: 2px;
+                        font-family: 'Segoe UI';
+                        font-size: 13px;
+                        font-weight: bold;
+                    }
+                    QPushButton#Button:hover {
+                        color: #818cf8;
+                    }
+                """)  
               
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -27,7 +27,7 @@ export default function InvigilatorPage({
     };
 
     getParams();
-  }, []);
+  }, [params, searchParams]);
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-blue-900 via-indigo-500 to-blue-600 p-4">

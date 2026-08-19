@@ -83,13 +83,14 @@ async def get_exam_questions():
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
     
-@api.get("/exam-questions/{exam_question_id}")
+@api.get("/exam-question/{exam_question_id}")
 async def get_exam_question(exam_question_id: str):
     try:
         question = await db["EXAM_QUESTION_T"].find_one({"_id": ObjectId(exam_question_id)})
         if not question:
             raise HTTPException(status_code=404, detail="Exam question not found")
-        return serialize_doc(question)
+        # return serialize_doc(question)
+        return jsonable_encoder(question, custom_encoder={ObjectId: str})
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
 

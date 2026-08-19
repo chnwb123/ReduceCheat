@@ -722,7 +722,10 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
   );
 }
 
-export default function AdminManageCoursePage({ params, searchParams }: AdminPageProps) {
+export default function AdminManageCoursePage({
+  params,
+  searchParams,
+}: AdminPageProps) {
   return (
     <div>
       <CreateCoursePanel params={params} searchParams={searchParams} />

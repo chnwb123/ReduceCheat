@@ -10,8 +10,8 @@ import { useRouter } from "next/navigation";
 import { Loading } from "@/components/general/animation/loading/page";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState<User["username"]>("");
-  const [password, setPassword] = useState<User["password"]>("");
+  const [username, setUsername] = useState<User["username"]>("INS1");
+  const [password, setPassword] = useState<User["password"]>("Wenbin123@");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -93,7 +93,7 @@ export default function LoginPage() {
           );
         } else if (userRole === "Invigilator") {
           router.push(
-            "/exam_unit/" +
+            "/invigilator/" +
               encodeURIComponent(userRoleId) +
               "?name=" +
               encodeURIComponent(name),

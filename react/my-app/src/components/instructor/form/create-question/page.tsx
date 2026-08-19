@@ -555,7 +555,13 @@ function Form({
 
 export default function CreateQuestionForm({
   instructorId,
-}: CreateQuestionFormProps) {
+  setIsSubmitted,
+  isSubmitted,
+}: {
+  instructorId: string;
+  setIsSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
+  isSubmitted: boolean;
+}) {
   const [instructorCourses, setInstructorCourses] = useState<CourseDB[]>([]);
 
   const [examData, setExamData] = useState<ExamData>({
@@ -621,6 +627,7 @@ export default function CreateQuestionForm({
     };
     console.log("Full exam payload:", payload);
     try {
+      setIsSubmitted(!isSubmitted);
       const response = await fetch(
         "/api/mongodb/write/instructor/create-one-exam-question",
         {
@@ -692,11 +699,17 @@ export default function CreateQuestionForm({
             }
             name="course_id"
           >
-            <option value="" className="text-black">Select Course</option>
+            <option value="" className="text-black">
+              Select Course
+            </option>
             {Array.from({ length: instructorCourses.length }, (_, i) => {
               const text = instructorCourses[i]?.name || "";
               return (
-                <option className="text-black" key={i} value={String(instructorCourses[i]?._id)}>
+                <option
+                  className="text-black"
+                  key={i}
+                  value={String(instructorCourses[i]?._id)}
+                >
                   {text || "(empty)"}
                 </option>
               );
