@@ -1,3 +1,5 @@
+import socketio
+import requests 
 from pathlib import Path
 import subprocess
 import sys
@@ -37,18 +39,22 @@ class FetchDataWorker(QThread):
 
 # 2. Main PySide6 Window
 class ExamAnsweringWindow(QMainWindow):
-    def __init__(self, exam_question_id=None, start_date_time=None, end_date_time=None, duration=None, date_time=None, *args, **kwargs):
+    def __init__(self, exam_question_id=None, start_date_time=None, end_date_time=None, duration=None, date_time=None, role_id=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.exam_locked = False
         self.monitor_process = None
-        self.run_AI_background()
         self.currentTime = QDateTime.currentDateTime()
         self.examStartDateTime = self.formatDateTime(start_date_time)
         self.examEndDateTime = self.formatDateTime(end_date_time)
         print("Exam Start DateTime: ", self.examStartDateTime)
         print("Exam End DateTime: ", self.examEndDateTime)
         self.exam_question_id = exam_question_id
-        print("Fetched exam_question_id: ", self.exam_question_id)
+        print("Fetched exam_question_id in exam answering: ", self.exam_question_id)
+        self.user_role_id = role_id
+        print("Fetched user_role_id in exam answering: ", self.user_role_id)
+        self.sio = socketio.Client()
+        self.run_AI_background()
+        self.join_socketio_room()
         self.setWindowTitle("Student Answering Page")
         # self.setGeometry(100, 100, 400, 200)
         self.setFixedSize(1200, 850)
@@ -158,14 +164,46 @@ class ExamAnsweringWindow(QMainWindow):
 
         # 3. Start data fetch automatically
         self.load_data_from_fastapi()
-        self.apply_styles()
+        self.apply_styles()   
+        
+    def join_socketio_room(self):
+        @self.sio.event
+        def connect():
+            print(f"{self.user_role_id} is connecting to Socket.IO server room exam_{self.exam_question_id}")
+            # Join a room based on exam_question_id and user_role_id dict
+            room_details = {
+                "room_id": f"exam_{self.exam_question_id}",
+                "user_id": self.user_role_id
+            }
+            self.sio.emit('join_exam_room', room_details)
+
+        @self.sio.on('room_joined')
+        def on_room_joined(data):
+            print(f"Room joined successfully: {data.get('message')}")
+
+        # @self.sio.event
+        # def disconnect():
+        #     print(f"{self.user_role_id} has been disconnected from exam answering page.") 
+
+        # @self.sio.on('server_status')
+        # def on_server_status(data):
+        #     print("Server status:", data)
+
+        # @self.sio.on('receive_data')
+        # def on_receive_data(data):
+        #     print("Received data from server:", data)
+
+        try:
+            self.sio.connect('http://127.0.0.1:8000')  # Adjust the URL if needed
+        except Exception as e:
+            print(f"Failed to connect to Socket.IO server: {e}")
 
     def run_AI_background(self):
         currentFilePath = Path(__file__).resolve().parent
         targetAIfilePath = currentFilePath.parent / "AI-background" / "main.py"
 
         self.monitor_process = subprocess.Popen(
-            [sys.executable, str(targetAIfilePath)]
+            [sys.executable, str(targetAIfilePath), str(self.user_role_id), str(self.exam_question_id)],
         )
 
     def updateTimeRemaining(self):
@@ -258,7 +296,7 @@ class ExamAnsweringWindow(QMainWindow):
             self.scrollLayout.addWidget(QLabel(f"Failed to load exam: {data_dict['error']}"))
         else:
             # self.add_item_with_button(data_dict.get('_id', 'N/A'), data_dict.get('title', 'N/A'), data_dict.get('description', 'N/A'), data_dict.get('date', 'N/A'))
-            print("Data fetched: ", data_dict)
+            # print("Data fetched: ", data_dict)
             self.examTitle.setText(data_dict.get('title', ''))
             self.examDescription.setText(data_dict.get('description', ''))
             self.numOfSections.setText(str(data_dict.get('number_of_section', '')))

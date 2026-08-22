@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/general/navigation/top-menu/page";
 import { UserDB } from "../../api/mongodb/write/admin/create-one-user/route";
+import { ExamQuestionDB } from "@/app/api/mongodb/write/instructor/create-one-exam-question/route";
 import Link from "next/link";
 
 export interface InvigilatorPageProps {
   params: Promise<{ invigilatorId: UserDB["role_id"] }>;
-  searchParams: Promise<{ name: UserDB["name"] }>;
+  searchParams: Promise<{ name: UserDB["name"], examSessionId: ExamQuestionDB["_id"] }>;
 }
 
 export default function InvigilatorPage({

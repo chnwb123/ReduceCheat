@@ -167,7 +167,7 @@ class HomePage(QMainWindow):
         self.joinExamButtons[exam_question_id] = joinExamButton
 
         # Connect button click event and pass the specific item context
-        joinExamButton.clicked.connect(lambda: self.handle_button_click(item, exam_question_id, startDate, endDate, duration, dateTime))
+        joinExamButton.clicked.connect(lambda: self.handle_button_click(item, exam_question_id, startDate, endDate, duration, dateTime, self.student_role_id))
 
         # 5. Add elements to layout (with a stretch to push button to the right)
         layout.addRow(questionLabel, questionText)
@@ -249,26 +249,22 @@ class HomePage(QMainWindow):
         countdownLabel = self.countDownTimerLabels[exam_question_id]
         countdownLabel.setText(countdown_text)
 
-    def handle_button_click(self, item, exam_question_id, start_date_time, end_date_time, duration, date_time):
+    def handle_button_click(self, item, exam_question_id, start_date_time, end_date_time, duration, date_time, role_id):
         # Action to perform when the button is clicked (e.g., delete item)
         row_index = self.list_widget.row(item)
         print(f"Clicked button on row {row_index} for item: {item.text()}")
         print(f"Exam Question ID: {exam_question_id}")
+        print(f"Role ID: {role_id}")
         # self.navigate_to_exam_answering_window(exam_question_id, exam_start="2026-08-07T00:30:00", exam_end="2026-08-07T00:30:10")  # Example start and end times
-        self.navigate_to_exam_answering_window(exam_question_id, start_date_time, end_date_time, duration, date_time)  # Example start and end times
-
-        # Safely remove the item from the list
-        # self.list_widget.takeItem(row_index)
+        self.navigate_to_exam_answering_window(exam_question_id, start_date_time, end_date_time, duration, date_time, role_id)  # Example start and end times
 
     # def navigate_to_exam_answering_window(self, exam_question_id, exam_start, exam_end):
-    def navigate_to_exam_answering_window(self, exam_question_id, start_date_time, end_date_time, duration, date_time):
-
+    def navigate_to_exam_answering_window(self, exam_question_id, start_date_time, end_date_time, duration, date_time, role_id):
         # Close the current window
         self.close()
 
         # Open the Exam Answering Window
-        # self.exam_answering_window = ExamAnsweringWindow(exam_start, exam_end, exam_question_id)  
-        self.exam_answering_window = ExamAnsweringWindow(exam_question_id, start_date_time, end_date_time, duration, date_time)  
+        self.exam_answering_window = ExamAnsweringWindow(exam_question_id, start_date_time, end_date_time, duration, date_time, role_id)    
         self.exam_answering_window.show()
 
     def apply_styles(self):

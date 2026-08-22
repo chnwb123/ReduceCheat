@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 import { ExamData, ObjectiveQuestionData, SubjectiveQuestionData, SectionData } from "@/components/instructor/form/create-question/page";
 
 export interface ExamQuestionDB {
-    _id?: ObjectId;
+    _id?: ObjectId | string;
     instructor_id: ObjectId | ExamData["instructor_id"];
     course_id: ObjectId | ExamData["course_id"];
     title: ExamData["title"];

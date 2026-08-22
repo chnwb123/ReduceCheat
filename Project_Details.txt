@@ -30,3 +30,31 @@ Uses rooms, when app 1 emits, the server use io.to.emit() to pass to app 2
 - add ai object detection 
 - send data to react client, client must analyse each student data
 - on student answering develop start time, lockdown feature
+
+
+# IO create rooms - https://share.google/aimode/8Ua6Km6raF01eldC1
+# Send msg to room owner - https://share.google/aimode/PeP9W5WoXVKi6ejl8
+
+Student Analysis Data:
+{
+  "student_analysis_data": [
+    {
+      "user_role_id": "STU_1",
+      "exam_session_id": "exam_6a84b815d67ff831da3ddb4a",
+      "yaw_angle": "5.70"
+    }
+  ]
+}
+
+{
+  "student_analysis_data": [
+    {
+      "x": "x",
+    }
+  ]
+}
+
+left: -40 to -69, -70 + critical
+middle: -20 to 20, considered normal
+warning: -21 to -39, 21 to 39
+right: 40 to 69, 70 + critical

@@ -3,11 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
 import { Navbar } from "@/components/general/navigation/top-menu/page";
 import { UserDB } from "../../../api/mongodb/write/admin/create-one-user/route";
-
-export interface InvigilatorPageProps {
-  params: Promise<{ invigilatorId: UserDB["role_id"] }>;
-  searchParams: Promise<{ name: UserDB["name"] }>;
-}
+import { ExamQuestionDB } from "../../../api/mongodb/write/instructor/create-one-exam-question/route";
+import { Loading } from "@/components/general/animation/loading/page";
+import { formatDuration } from "@/app/student/view-exam/[studentId]/page";
+import { InvigilatorPageProps } from "@/app/invigilator/[invigilatorId]/page";
+import Link from "next/link";
 
 export default function InvigilatorPage({
   params,
@@ -15,6 +15,8 @@ export default function InvigilatorPage({
 }: InvigilatorPageProps) {
   const [invigilatorId, setInvigilatorId] = useState<UserDB["role_id"]>("");
   const [name, setName] = useState<UserDB["name"]>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [examSessions, setExamSessions] = useState<ExamQuestionDB[]>([]);
   const [backendData, setBackendData] = useState("");
   const [yawAngle, setYawAngle] = useState("");
   const [status, setStatus] = useState("Disconnected");
@@ -32,6 +34,30 @@ export default function InvigilatorPage({
 
     getParams();
   }, [params, searchParams]);
+
+  useEffect(() => {
+    const getExamSession = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/mongodb/read/invigilator/get-exam-sessions`,
+          {
+            cache: "no-store",
+          },
+        );
+
+        if (response.ok) {
+          const examSessionData = await response.json();
+          setIsLoading(false);
+          setExamSessions(examSessionData);
+          console.log("Fetched exam sessions:", examSessionData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch exam sessions:", error);
+      }
+    };
+    getExamSession();
+  }, []);
 
   useEffect(() => {
     // Connect directly to the FastAPI server port (e.g., 8000)
@@ -97,18 +123,53 @@ export default function InvigilatorPage({
             Monitor Exams
           </h1>
         </div>
-        <div className="tracking-tight text-white">
-          <div style={{ padding: "20px" }}>
+        <div className="tracking-tight">
+          {isLoading ? (
+            <Loading />
+          ) : (
+            <div
+              className={`grid grid-cols-1 gap-x-5 gap-y-2 p-2 text-xl font-bold`}
+            >
+              <div className="text-white">
+                Exam Sessions Found: {examSessions.length}
+              </div>
+              {examSessions.map((session, index) => (
+                <div key={index} className="rounded bg-gray-300 p-2">
+                  <p>Exam Session: {session.title}</p>
+                  <p>Exam Session Description: {session.description}</p>
+                  <p>
+                    Exam Session Date: {session.start_date_time?.slice(0, 10)}
+                  </p>
+                  <p>
+                    Exam Session Time: {session.start_date_time?.slice(11, -3)}{" "}
+                    - {session.end_date_time?.slice(11)}
+                  </p>
+                  <p>
+                    Exam Session Duration: {formatDuration(session.duration)}
+                  </p>
+                  <Link
+                    href={`/invigilator/monitor-specific-exam/${invigilatorId}?name=${name}&examSessionId=${session._id}`}
+                  >
+                    <div className="rounded border border-slate-800 bg-slate-800 px-4 py-2 text-center text-xl font-semibold text-white shadow-md transition hover:bg-white/20 hover:text-black">
+                      View Exam Session
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* <div style={{ padding: "20px" }}>
             <h1>Yaw Angle: {yawAngle} degrees</h1>
-            {/* <p>
+            <p>
               Connection Status: <strong>{status}</strong>
             </p>
             <button onClick={triggerDataFetch}>Request Live Data</button>
             <div>
               <h3>Payload from FastAPI:</h3>
               <p>{backendData || "No data received yet."}</p>
-            </div> */}
-          </div>
+            </div>
+          </div> */}
         </div>
       </div>
     </div>

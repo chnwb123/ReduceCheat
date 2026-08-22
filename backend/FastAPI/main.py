@@ -25,19 +25,31 @@ MONGODB_URI = os.getenv("MONGODB_URI2")
 client = AsyncIOMotorClient(MONGODB_URI)
 db = client["reduceCheat"]
 
+allowed_origins = [
+    "http://localhost:3000",  # React local port
+    "*"
+]
+
 api = FastAPI()
 
 # Configure CORS for standard HTTP requests 
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # React local port
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Dictionary to map exam users to exam rooms
+sid_to_room_mapping = {}
+user_to_room_mapping = {}
+student_analysis_data = [] # List to store each student analysis data for the invigilator to monitor
+
 # Create a Socket.IO Async Server allowing your React origin
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='http://localhost:3000')
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins=allowed_origins)
+
+# api.mount("socket.io", socketio.ASGIApp(sio))
 
 # Wrap FastAPI app with Socket.IO ASGI application
 socket_app = socketio.ASGIApp(sio, other_asgi_app=api)
@@ -57,7 +69,41 @@ async def request_data(sid, data):
 
 @sio.event
 async def disconnect(sid):
+    # Remove the client from the room mapping
+    if sid in sid_to_room_mapping:
+        room_id = sid_to_room_mapping[sid]
+        print(f"Removed SID {sid} mapping to room {room_id}")
+        del sid_to_room_mapping[sid]
+        if room_id in user_to_room_mapping:
+            user_id = user_to_room_mapping[room_id]
+            del user_to_room_mapping[room_id]
+            print(f"Removed User {user_id} mapping to room {room_id}")
+            if student_analysis_data:
+                # Remove the student analysis data for the disconnected user
+                student_analysis_data[:] = [entry for entry in student_analysis_data if entry["user_role_id"] != user_id]
+                print(f"Removed student analysis data for User {user_id}")
     print(f"Client disconnected: {sid}")
+
+@sio.on("join_exam_room")
+async def join_exam_room(sid, room_details: dict):
+    room_id = room_details.get("room_id")
+    room_user_id = room_details.get("user_id")
+    user_to_room_mapping[room_id] = room_user_id  # Store the mapping of room_id to user_id
+    sid_to_room_mapping[sid] = room_id  # Store the mapping of sid to room_id
+    print(f"SID {sid} has been mapped to exam room: {room_id}")
+    if not room_id or not room_user_id:
+        raise HTTPException(status_code=400, detail="room_id and user_id are required")
+    try: 
+        print(f"User {room_user_id} is joining exam room: {room_id}")
+        await sio.enter_room(sid=sid, room=room_id)
+        # return {"message": f"User {room_user_id} joined exam room: room_{room_id}"}
+        print (f"User {room_user_id} joined exam room: {room_id}")
+        for room, user in user_to_room_mapping.items():
+            print(f"Room: {room}, User: {user}")
+        await sio.emit("room_joined", {"message": f"User {room_user_id} joined exam room: {room_id}"}, to=sid)
+    except Exception as e:
+        print(f"Error joining room: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Note: Run using the `socket_app` object instead of `app`
 
@@ -137,8 +183,8 @@ async def get_upcoming_exams(role_id: str):
         ]
         exams = await db["EXAM_QUESTION_T"].aggregate(pipeline).to_list(length=1000)
         # print(exams)
-        for exam in exams:
-            print(f"Exam ID: {exam['_id']}, Course ID: {exam['course_id']}, Exam Details: {exam.get('course_plus_exam_details', [])}")
+        # for exam in exams:
+        #     print(f"Exam ID: {exam['_id']}, Course ID: {exam['course_id']}, Exam Details: {exam.get('course_plus_exam_details', [])}")
         return jsonable_encoder(exams, custom_encoder={ObjectId: str})
     except Exception as error:
         print(f"Error fetching upcoming exams: {error}")
@@ -160,3 +206,92 @@ async def receive_yaw_angle(data: AIAnalysisData):
     )
 
     return {"message": "Yaw angle received and broadcast successfully."}
+
+def process_yaw_angle(yaw_angle):
+    if yaw_angle is None:
+        return 0
+    elif float(yaw_angle) < 0:
+        formattedYawAngle = float(yaw_angle) * -1
+        return float(formattedYawAngle)
+    else:
+        return float(yaw_angle)
+
+@api.post("/ai_analysis")
+async def receive_ai_analysis(data: dict):
+    yaw_angle = process_yaw_angle(data.get("yaw_angle"))
+    # yaw_angle = data.get("yaw_angle")
+    exam_question_id = data.get("exam_question_id")
+    role_id = data.get("role_id")
+
+    print(f"Received Yaw Angle: {yaw_angle} degrees for Exam Question ID: {exam_question_id} and Role ID: {role_id}")
+    if not student_analysis_data:
+        student_analysis_data.append({
+            "user_role_id": role_id,
+            "exam_session_id": f"exam_{exam_question_id}",
+            "yaw_angles_collection": [yaw_angle],
+            "latest_yaw_angle": yaw_angle,
+            "average_yaw_angle": 0,
+            "yaw_angle_status": "normal",
+            "number_of_warnings": 0,
+            "warnings_reasons": [],
+            "number_of_violations": 0,
+            "violations_reasons": []
+        }) 
+    else:
+        # Update existing entry for the same role_id and exam_question_id
+        updated = False
+        for entry in student_analysis_data:
+            if entry["user_role_id"] == role_id and entry["exam_session_id"] == f"exam_{exam_question_id}":
+                entry["yaw_angles_collection"].append(yaw_angle)
+                entry["latest_yaw_angle"] = yaw_angle
+                updated = True
+                break
+        if not updated:
+            student_analysis_data.append({
+                "user_role_id": role_id,
+                "exam_session_id": f"exam_{exam_question_id}",
+                "yaw_angles_collection": [yaw_angle],
+                "latest_yaw_angle": yaw_angle,
+                "average_yaw_angle": 0,
+                "yaw_angle_status": "normal",
+                "number_of_warnings": 0,
+                "warnings_reasons": [],
+                "number_of_violations": 0,
+                "violations_reasons": []
+            })
+
+        # Processing yaw angle
+        for entry in student_analysis_data:
+            if entry["user_role_id"] == role_id and entry["exam_session_id"] == f"exam_{exam_question_id}":
+                latest_yaw_angles = entry["yaw_angles_collection"]
+                avg_yaw_angle = sum(latest_yaw_angles) / len(latest_yaw_angles)
+                print(f"Average Yaw Angle for student {role_id}: {avg_yaw_angle} degrees")
+                entry["average_yaw_angle"] = avg_yaw_angle
+
+                # Process the latest 5 yaw angles to determine if the student is looking away
+                if len(latest_yaw_angles) >= 5:
+                    last_five_angles = latest_yaw_angles[-3:]
+                    if all(abs(angle) >= 70 for angle in last_five_angles):
+                        entry["number_of_violations"] += 1
+                        entry["violations_reasons"].append("Looking away from screen with head tilt angle >= 70 degrees")
+                    elif all(abs(angle) >= 40 for angle in last_five_angles):
+                        entry["number_of_warnings"] += 1
+                        entry["warnings_reasons"].append("Looking away from screen with head tilt angle >= 40 degrees")
+
+        await sio.emit(
+            "student_analysis_data",
+            {
+                "student_analysis_data": student_analysis_data
+            },
+        )
+
+    # await sio.emit(
+    #     "ai_analysis_update",
+    #     {
+    #         "yaw_angle": yaw_angle,
+    #         "exam_question_id": exam_question_id,
+    #         "role_id": role_id
+    #     },
+    # )
+
+    # return {"message": "AI analysis data received and broadcast successfully."}

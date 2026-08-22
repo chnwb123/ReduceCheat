@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { ExamQuestionDB } from "@/app/api/mongodb/write/instructor/create-one-exam-question/route";
 import { Navbar } from "@/components/general/navigation/top-menu/page";
 import CreateQuestionForm from "@/components/instructor/form/create-question/page";

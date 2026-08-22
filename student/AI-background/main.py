@@ -1,3 +1,4 @@
+import sys
 import os
 import requests 
 os.environ["GRPC_VERBOSITY"] = "ERROR" # Suppress Abseil and gRPC logging noise
@@ -17,6 +18,8 @@ model_path = os.path.join(os.path.dirname(__file__), "model", "face_landmarker.t
 latest_result = None
 last_print_time = 0
 img_h, img_w = 0, 0  # Global variables to store image dimensions
+user_role_id = None
+exam_question_id = None
 
 def print_result_callback(result: vision.FaceLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
     """
@@ -88,13 +91,21 @@ def print_face_landmarker_result(result: vision.FaceLandmarkerResult):
         print(f"Face Yaw Angle: {yaw} degrees")
         # Send yaw angle to FastAPI endpoint
         try:
-            response = requests.post(f"http://127.0.0.1:8000/exam_ai", json={"yaw_angle": yaw})
+            # response = requests.post(f"http://127.0.0.1:8000/exam_ai", json={"yaw_angle": yaw})
+            # print(f"Sending Yaw Angle: {yaw} degrees to FastAPI for Exam Question ID: {exam_question_id} and Role ID: {user_role_id}")
+            response = requests.post(f"http://127.0.0.1:8000/ai_analysis", json={"yaw_angle": yaw, "exam_question_id": exam_question_id, "role_id": user_role_id})
         except requests.RequestException as e:
             print(f"Error sending yaw angle to FastAPI: {e}")
 
 def main():
+    global user_role_id, exam_question_id
+    user_role_id = sys.argv[1] if len(sys.argv) > 1 else None
+    exam_question_id = sys.argv[2] if len(sys.argv) > 2 else None
+    print("Fetched User Role ID in AI Analysis:", user_role_id)
+    print("Exam Question ID in AI Analysis:", exam_question_id)
+
     global latest_result
-    
+    print(f"Starting MediaPipe Face Landmarker Livestream for Exam Question ID: {exam_question_id} and Role ID: {user_role_id}")
     # 2. Configure MediaPipe Face Landmarker Options for LIVE_STREAM mode
     base_options = python.BaseOptions(model_asset_path=model_path)
     options = vision.FaceLandmarkerOptions(
