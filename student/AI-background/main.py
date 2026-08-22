@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest import result
 from zoneinfo import ZoneInfo
 import sys
 import os
@@ -58,6 +59,15 @@ def object_detection_callback(
             )
 
 def print_face_landmarker_result(result: vision.FaceLandmarkerResult):
+    if not result.face_landmarks:
+        yaw = "0"
+        print("No face detected. Sending yaw angle: 0")
+        try:
+            malaysia_time = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
+            response = requests.post(f"http://127.0.0.1:8000/ai_analysis", json={"yaw_angle": yaw, "exam_question_id": exam_question_id, "role_id": user_role_id, "phone_detected": phone_detected, "date_time": malaysia_time.strftime("%Y-%m-%d %I:%M %p")})
+        except requests.RequestException as e:
+            print(f"Error sending yaw angle to FastAPI: {e}")
+            
     print("FaceLandmarkerResult:")
 
     # Generic 3D model coordinates of a standard face

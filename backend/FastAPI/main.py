@@ -221,6 +221,7 @@ def process_yaw_angle(yaw_angle):
 @api.post("/ai_analysis")
 async def receive_ai_analysis(data: dict):
     yaw_angle = process_yaw_angle(data.get("yaw_angle"))
+    print("Received Yaw Angle in FastAPI:", yaw_angle)
     # yaw_angle = data.get("yaw_angle")
     exam_question_id = data.get("exam_question_id")
     role_id = data.get("role_id")
@@ -277,7 +278,7 @@ async def receive_ai_analysis(data: dict):
                 entry["average_yaw_angle"] = avg_yaw_angle
 
                 # Process the latest 4 yaw angles to determine if the student is looking away
-                if len(latest_yaw_angles) >= 4:
+                if len(latest_yaw_angles) % 4 == 0:  # Check if we have a multiple of 4 yaw angles
                     last_consecutive_angles = latest_yaw_angles[-4:]
                     if all(abs(angle) >= 70 for angle in last_consecutive_angles):
                         entry["number_of_violations"] += 1
@@ -287,7 +288,7 @@ async def receive_ai_analysis(data: dict):
                         entry["warnings_reasons"].append(f"Looking away from screen with head tilt angle >= 40 degrees at {date_time}")
                     elif all(abs(angle) == 0 for angle in last_consecutive_angles):
                         entry["number_of_violations"] += 1
-                        entry["violations_reasons"].append(f"Student's head is not detected for 3 seconds at {date_time}")
+                        entry["violations_reasons"].append(f"Student's head is not detected for 4 seconds at {date_time}")
 
                 # Process mobile phone detection status
                 if entry["phone_detection_status"] == "detected":
@@ -300,14 +301,3 @@ async def receive_ai_analysis(data: dict):
                 "student_analysis_data": student_analysis_data
             },
         )
-
-    # await sio.emit(
-    #     "ai_analysis_update",
-    #     {
-    #         "yaw_angle": yaw_angle,
-    #         "exam_question_id": exam_question_id,
-    #         "role_id": role_id
-    #     },
-    # )
-
-    # return {"message": "AI analysis data received and broadcast successfully."}

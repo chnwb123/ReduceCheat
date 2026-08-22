@@ -178,7 +178,7 @@ export default function InvigilatorPage({
                     Number of Warnings: {studentData.number_of_warnings}{" "}
                     {studentData.number_of_warnings > 0 && (
                       <button
-                        className="ml-2 rounded text-blue-500 hover:text-blue-700"
+                        className="ml-2 rounded text-orange-700 hover:text-orange-900"
                         onClick={() => {
                           handleViewWarnings(studentData.user_role_id);
                         }}
