@@ -1,3 +1,5 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import sys
 import os
 import requests 
@@ -13,9 +15,12 @@ import numpy as np
 
 # 1. Path to your downloaded .task file
 model_path = os.path.join(os.path.dirname(__file__), "model", "face_landmarker.task")
+model_path_mobile_phone_detection = os.path.join(os.path.dirname(__file__), "model", "efficientdet_lite0.tflite")
 
 # Global variable to safely store the latest async prediction results
 latest_result = None
+latest_mobile_phone_result = None
+phone_detected = False  # Flag to indicate if a mobile phone is detected
 last_print_time = 0
 img_h, img_w = 0, 0  # Global variables to store image dimensions
 user_role_id = None
@@ -31,6 +36,26 @@ def print_result_callback(result: vision.FaceLandmarkerResult, output_image: mp.
     if timestamp_ms - last_print_time > 1000:  # Print results every 1 second
         last_print_time = timestamp_ms
         print_face_landmarker_result(result)
+
+def object_detection_callback(
+    result: vision.ObjectDetectorResult,
+    output_image: mp.Image,
+    timestamp_ms: int
+):
+    global latest_mobile_phone_result, phone_detected
+
+    latest_mobile_phone_result = result
+
+    # Check if a mobile phone is detected in the current frame
+    phone_detected = False
+    for detection in result.detections:
+        for category in detection.categories:
+            if category.category_name == "cell phone":
+                phone_detected = True
+            print(
+                f"Object detected: {category.category_name}, "
+                f"confidence: {category.score:.2f}"
+            )
 
 def print_face_landmarker_result(result: vision.FaceLandmarkerResult):
     print("FaceLandmarkerResult:")
@@ -89,11 +114,12 @@ def print_face_landmarker_result(result: vision.FaceLandmarkerResult):
         yaw = angles[1] 
         yaw = f"{yaw:.2f}"
         print(f"Face Yaw Angle: {yaw} degrees")
-        # Send yaw angle to FastAPI endpoint
+        # Send yaw angle to FastAPI endpoint. If phone is detected, phone detection status would also be sent.
         try:
             # response = requests.post(f"http://127.0.0.1:8000/exam_ai", json={"yaw_angle": yaw})
             # print(f"Sending Yaw Angle: {yaw} degrees to FastAPI for Exam Question ID: {exam_question_id} and Role ID: {user_role_id}")
-            response = requests.post(f"http://127.0.0.1:8000/ai_analysis", json={"yaw_angle": yaw, "exam_question_id": exam_question_id, "role_id": user_role_id})
+            malaysia_time = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
+            response = requests.post(f"http://127.0.0.1:8000/ai_analysis", json={"yaw_angle": yaw, "exam_question_id": exam_question_id, "role_id": user_role_id, "phone_detected": phone_detected, "date_time": malaysia_time.strftime("%Y-%m-%d %I:%M %p")})
         except requests.RequestException as e:
             print(f"Error sending yaw angle to FastAPI: {e}")
 
@@ -119,6 +145,16 @@ def main():
         output_facial_transformation_matrixes=True,
         result_callback=print_result_callback # Mandatory for LIVESTREAM mode
     )
+
+    mobile_phone_base_options = python.BaseOptions(model_asset_path=model_path_mobile_phone_detection)
+    mobile_phone_options = vision.ObjectDetectorOptions(
+        base_options=mobile_phone_base_options,
+        running_mode=vision.RunningMode.LIVE_STREAM,
+        max_results=1,
+        score_threshold=0.5,
+        category_allowlist=["cell phone"],
+        result_callback=object_detection_callback
+    )
     
     # 3. Initialize OpenCV Video Capture (0 is usually the default webcam)
     cap = cv2.VideoCapture(0)
@@ -127,7 +163,8 @@ def main():
         return
 
     # 4. Use the context manager to open the FaceLandmarker
-    with vision.FaceLandmarker.create_from_options(options) as landmarker:
+    with vision.FaceLandmarker.create_from_options(options) as landmarker, \
+        vision.ObjectDetector.create_from_options(mobile_phone_options) as object_detector:
         print("Camera stream started. Press 'q' to exit.")
         
         while cap.isOpened():
@@ -150,6 +187,7 @@ def main():
             
             # Send the frame to the landmarker for asynchronous processing
             landmarker.detect_async(mp_image, timestamp_ms)
+            object_detector.detect_async(mp_image, timestamp_ms)
             
             # 5. Draw the landmarks if a result has returned from the callback
             if latest_result is not None and latest_result.face_landmarks:
@@ -162,12 +200,50 @@ def main():
                         
                         # Draw a small circle on each landmark coordinate
                         cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
-            
+
             # Flip the image horizontally for a mirror-like selfie view
             display_frame = cv2.flip(frame, 1)
 
+            if latest_mobile_phone_result is not None:
+                for detection in latest_mobile_phone_result.detections:
+
+                    bbox = detection.bounding_box
+
+                    x = int(bbox.origin_x)
+                    y = int(bbox.origin_y)
+                    w = int(bbox.width)
+                    h = int(bbox.height)
+
+                    mirrored_x = display_frame.shape[1] - x - w
+
+                    cv2.rectangle(
+                        display_frame,
+                        (mirrored_x, y),
+                        (mirrored_x + w, y + h),
+                        (0, 0, 255),
+                        2
+                    )
+
+                    if detection.categories:
+                        category = detection.categories[0]
+
+                        label = (
+                            f"{category.category_name}: "
+                            f"{category.score:.2f}"
+                        )
+
+                        cv2.putText(
+                            display_frame,
+                            label,
+                            (mirrored_x, y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.6,
+                            (0, 0, 255),
+                            2
+                        )
+
             # Display the processed window
-            cv2.imshow('MediaPipe Face Landmarker Livestream', display_frame)
+            cv2.imshow('MediaPipe Face Landmarker & Mobile Phone Detection Livestream', display_frame)
             
             # Break loop when 'q' key is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):

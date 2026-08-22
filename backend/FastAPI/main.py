@@ -1,3 +1,5 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -222,6 +224,9 @@ async def receive_ai_analysis(data: dict):
     # yaw_angle = data.get("yaw_angle")
     exam_question_id = data.get("exam_question_id")
     role_id = data.get("role_id")
+    mobile_phone_detected = data.get("phone_detected", False)
+    print(f"Received Mobile Phone Detection Status: {mobile_phone_detected}")
+    date_time = data.get("date_time")
 
     print(f"Received Yaw Angle: {yaw_angle} degrees for Exam Question ID: {exam_question_id} and Role ID: {role_id}")
     if not student_analysis_data:
@@ -235,7 +240,8 @@ async def receive_ai_analysis(data: dict):
             "number_of_warnings": 0,
             "warnings_reasons": [],
             "number_of_violations": 0,
-            "violations_reasons": []
+            "violations_reasons": [],
+            "phone_detection_status": "detected" if mobile_phone_detected else "not_detected"
         }) 
     else:
         # Update existing entry for the same role_id and exam_question_id
@@ -244,6 +250,7 @@ async def receive_ai_analysis(data: dict):
             if entry["user_role_id"] == role_id and entry["exam_session_id"] == f"exam_{exam_question_id}":
                 entry["yaw_angles_collection"].append(yaw_angle)
                 entry["latest_yaw_angle"] = yaw_angle
+                entry["phone_detection_status"] = "detected" if mobile_phone_detected else "not_detected"
                 updated = True
                 break
         if not updated:
@@ -257,10 +264,11 @@ async def receive_ai_analysis(data: dict):
                 "number_of_warnings": 0,
                 "warnings_reasons": [],
                 "number_of_violations": 0,
-                "violations_reasons": []
+                "violations_reasons": [],
+                "phone_detection_status": "detected" if mobile_phone_detected else "not_detected"
             })
 
-        # Processing yaw angle
+        # Processing yaw angle & phone detection status to determine warnings and violations
         for entry in student_analysis_data:
             if entry["user_role_id"] == role_id and entry["exam_session_id"] == f"exam_{exam_question_id}":
                 latest_yaw_angles = entry["yaw_angles_collection"]
@@ -268,15 +276,23 @@ async def receive_ai_analysis(data: dict):
                 print(f"Average Yaw Angle for student {role_id}: {avg_yaw_angle} degrees")
                 entry["average_yaw_angle"] = avg_yaw_angle
 
-                # Process the latest 5 yaw angles to determine if the student is looking away
-                if len(latest_yaw_angles) >= 5:
-                    last_five_angles = latest_yaw_angles[-3:]
-                    if all(abs(angle) >= 70 for angle in last_five_angles):
+                # Process the latest 4 yaw angles to determine if the student is looking away
+                if len(latest_yaw_angles) >= 4:
+                    last_consecutive_angles = latest_yaw_angles[-4:]
+                    if all(abs(angle) >= 70 for angle in last_consecutive_angles):
                         entry["number_of_violations"] += 1
-                        entry["violations_reasons"].append("Looking away from screen with head tilt angle >= 70 degrees")
-                    elif all(abs(angle) >= 40 for angle in last_five_angles):
+                        entry["violations_reasons"].append(f"Looking away from screen with head tilt angle >= 70 degrees at {date_time}")
+                    elif all(abs(angle) >= 40 for angle in last_consecutive_angles):
                         entry["number_of_warnings"] += 1
-                        entry["warnings_reasons"].append("Looking away from screen with head tilt angle >= 40 degrees")
+                        entry["warnings_reasons"].append(f"Looking away from screen with head tilt angle >= 40 degrees at {date_time}")
+                    elif all(abs(angle) == 0 for angle in last_consecutive_angles):
+                        entry["number_of_violations"] += 1
+                        entry["violations_reasons"].append(f"Student's head is not detected for 3 seconds at {date_time}")
+
+                # Process mobile phone detection status
+                if entry["phone_detection_status"] == "detected":
+                    entry["number_of_violations"] += 1
+                    entry["violations_reasons"].append(f"Mobile phone detected in the frame at {date_time}")
 
         await sio.emit(
             "student_analysis_data",

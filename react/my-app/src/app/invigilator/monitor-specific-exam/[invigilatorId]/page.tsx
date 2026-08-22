@@ -27,7 +27,7 @@ export default function InvigilatorPage({
   const socketRef = useRef<Socket | null>(null);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [isViewingWarnings, setIsViewingWarnings] = useState(false);
-  const [isViewingViolations, setIsViewingViolations] = useState(false);
+  // const [isViewingViolations, setIsViewingViolations] = useState(false);
 
   useEffect(() => {
     const getParams = async () => {
@@ -83,13 +83,13 @@ export default function InvigilatorPage({
   const handleViewWarnings = (userRoleId: string) => {
     setViewingUserId(userRoleId);
     setIsViewingWarnings(true);
-    setIsViewingViolations(false);
+    // setIsViewingViolations(false);
   };
 
   const handleViewViolations = (userRoleId: string) => {
     setViewingUserId(userRoleId);
     setIsViewingWarnings(false);
-    setIsViewingViolations(true);
+    // setIsViewingViolations(true);
   };
 
   return (
@@ -166,7 +166,7 @@ export default function InvigilatorPage({
             <p>No student analysis data available.</p>
           ) : (
             <div className="text-md grid grid-cols-5 gap-x-5 gap-y-2 p-2">
-              {backendData.map((studentData: any, index: number) => (
+              {backendData.filter((studentData: any) => studentData.exam_session_id === `exam_${examSessionId}`).map((studentData: any, index: number) => (
                 <div key={index} className="rounded bg-gray-300 p-2 text-black">
                   <p>Student ID: {studentData.user_role_id}</p>
                   <p>
