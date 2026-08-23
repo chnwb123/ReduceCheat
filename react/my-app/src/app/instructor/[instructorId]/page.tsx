@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/general/navigation/top-menu/page";
 import { UserDB } from "../../api/mongodb/write/admin/create-one-user/route";
+import { ExamQuestionDB } from "@/app/api/mongodb/write/instructor/create-one-exam-question/route";
 import Link from "next/link";
 
 export interface InstructorPageProps {
   params: Promise<{ instructorId: UserDB["role_id"] }>;
-  searchParams: Promise<{ name: UserDB["name"] }>;
+  searchParams: Promise<{ name: UserDB["name"], examSessionId: ExamQuestionDB["_id"] }>;
 }
 
 export default function InstructorPage({
@@ -37,6 +38,10 @@ export default function InstructorPage({
           {
             label: "Create Exam",
             href: `/instructor/create-question/${instructorId}?name=${name}`,
+          },
+          {
+            label: "View Student Performance",
+            href: `/instructor/view-student-performance/${instructorId}?name=${name}`,
           }
         ]}
       />
@@ -46,10 +51,15 @@ export default function InstructorPage({
             Welcome to the Instructor Dashboard, {name}
           </h1>
         </div>
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Link href={`/instructor/create-question/${instructorId}?name=${name}`}>
             <div className="rounded bg-white/10 px-4 py-4 text-center text-xl font-semibold text-white shadow-md transition hover:bg-white/20">
               Create Exam
+            </div>
+          </Link>
+          <Link href={`/instructor/view-student-performance/${instructorId}?name=${name}`}>
+            <div className="rounded bg-white/10 px-4 py-4 text-center text-xl font-semibold text-white shadow-md transition hover:bg-white/20">
+              View Student Performance
             </div>
           </Link>
         </div>

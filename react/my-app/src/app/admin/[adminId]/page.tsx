@@ -88,11 +88,7 @@ export default function AdminPage({ params, searchParams }: AdminPageProps) {
           {
             label: "Manage User",
             href: `/admin/manage-user/${adminId}?name=${name}`,
-          },
-          {
-            label: "About Admin",
-            href: `/admin/about-admin/${adminId}?name=${name}`,
-          },
+          }
         ]}
       />
       <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">

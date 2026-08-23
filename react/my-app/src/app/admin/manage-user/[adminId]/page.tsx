@@ -182,11 +182,7 @@ export default function AdminCreateUserPage({
           {
             label: "Manage User",
             href: `/admin/manage-user/${adminId}?name=${name}`,
-          },
-          {
-            label: "About Admin",
-            href: `/admin/about-admin/${adminId}?name=${name}`,
-          },
+          }
         ]} />
         {/* Authenticating Modal */}
         <div

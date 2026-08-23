@@ -33,23 +33,25 @@ export default function InstructorCreateQuestionPage({
 
   useEffect(() => {
     const getExamQuestions = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/mongodb/read/instructor/get-exam-questions/${instructorId}`,
-          {
-            cache: "no-store",
-          },
-        );
+      if (instructorId != "") {
+        setIsLoading(true);
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/mongodb/read/instructor/get-exam-questions/${instructorId}`,
+            {
+              cache: "no-store",
+            },
+          );
 
-        if (response.ok) {
-          const examQuestionsData = await response.json();
-          setIsLoading(false);
-          setExamQuestions(examQuestionsData);
-          console.log("Fetched exam questions:", examQuestionsData);
+          if (response.ok) {
+            const examQuestionsData = await response.json();
+            setIsLoading(false);
+            setExamQuestions(examQuestionsData);
+            console.log("Fetched exam questions:", examQuestionsData);
+          }
+        } catch (error) {
+          console.error("Failed to fetch exam questions:", error);
         }
-      } catch (error) {
-        console.error("Failed to fetch exam questions:", error);
       }
     };
     getExamQuestions();
@@ -64,6 +66,10 @@ export default function InstructorCreateQuestionPage({
             label: "Create Exam",
             href: `/instructor/create-question/${instructorId}?name=${name}`,
           },
+          {
+            label: "View Student Performance",
+            href: `/instructor/view-student-performance/${instructorId}?name=${name}`,
+          }
         ]}
       />
       <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">

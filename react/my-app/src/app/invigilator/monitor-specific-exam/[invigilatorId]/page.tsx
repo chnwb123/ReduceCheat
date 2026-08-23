@@ -6,6 +6,7 @@ import { ExamQuestionDB } from "@/app/api/mongodb/write/instructor/create-one-ex
 import { InvigilatorPageProps } from "@/app/invigilator/[invigilatorId]/page";
 import { io, type Socket } from "socket.io-client";
 import { Circle } from "lucide-react";
+import { ObjectId } from "mongodb";
 
 export const GreenDotCircle = () => {
   return <Circle className="h-4 w-4 fill-green-500 text-green-500" />;
@@ -15,6 +16,22 @@ export const RedDotCircle = () => {
   return <Circle className="h-4 w-4 fill-red-500 text-red-500" />;
 };
 
+export type UserAnalysisData = {
+  user_role_id?: string,
+  role_id?: string, // for EXAM_ANALYSIS db
+  exam_session_id?: string,
+  exam_question_id?: ObjectId, // for EXAM_ANALYSIS db
+  yaw_angles_collection: number[],
+  latest_yaw_angle: string,
+  average_yaw_angle: number,
+  yaw_angle_status: string,
+  number_of_warnings: number,
+  warnings_reasons: string[],
+  number_of_violations: number,
+  violations_reasons: string[],
+  phone_detection_status: string
+}
+
 export default function InvigilatorPage({
   params,
   searchParams,
@@ -22,12 +39,11 @@ export default function InvigilatorPage({
   const [invigilatorId, setInvigilatorId] = useState<UserDB["role_id"]>("");
   const [name, setName] = useState<UserDB["name"]>("");
   const [examSessionId, setExamSessionId] = useState<ExamQuestionDB["_id"]>("");
-  const [backendData, setBackendData] = useState([]);
+  const [backendData, setBackendData] = useState<UserAnalysisData[]>([]);
   const [status, setStatus] = useState("Disconnected");
   const socketRef = useRef<Socket | null>(null);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [isViewingWarnings, setIsViewingWarnings] = useState(false);
-  // const [isViewingViolations, setIsViewingViolations] = useState(false);
 
   useEffect(() => {
     const getParams = async () => {
@@ -83,13 +99,11 @@ export default function InvigilatorPage({
   const handleViewWarnings = (userRoleId: string) => {
     setViewingUserId(userRoleId);
     setIsViewingWarnings(true);
-    // setIsViewingViolations(false);
   };
 
   const handleViewViolations = (userRoleId: string) => {
     setViewingUserId(userRoleId);
     setIsViewingWarnings(false);
-    // setIsViewingViolations(true);
   };
 
   return (
@@ -115,14 +129,14 @@ export default function InvigilatorPage({
             <ul>
               {isViewingWarnings
                 ? backendData.find(
-                    (studentData: any) =>
+                    (studentData: UserAnalysisData) =>
                       studentData.user_role_id === viewingUserId,
                   )?.warnings_reasons.map((reason: string, index: number) => (
                     <li key={"warning-" + index}>{index + 1}. {reason}</li>
                   )) || []
                 : (
                     backendData.find(
-                      (studentData: any) =>
+                      (studentData: UserAnalysisData) =>
                         studentData.user_role_id === viewingUserId,
                     )?.violations_reasons || []
                   ).map((reason: string, index: number) => (
@@ -166,7 +180,7 @@ export default function InvigilatorPage({
             <p>No student analysis data available.</p>
           ) : (
             <div className="text-md grid grid-cols-5 gap-x-5 gap-y-2 p-2">
-              {backendData.filter((studentData: any) => studentData.exam_session_id === `exam_${examSessionId}`).map((studentData: any, index: number) => (
+              {backendData.filter((studentData: UserAnalysisData) => studentData.exam_session_id === `exam_${examSessionId}`).map((studentData: UserAnalysisData, index: number) => (
                 <div key={index} className="rounded bg-gray-300 p-2 text-black">
                   <p>Student ID: {studentData.user_role_id}</p>
                   <p>
@@ -180,7 +194,7 @@ export default function InvigilatorPage({
                       <button
                         className="ml-2 rounded text-orange-700 hover:text-orange-900"
                         onClick={() => {
-                          handleViewWarnings(studentData.user_role_id);
+                          handleViewWarnings(String(studentData.user_role_id));
                         }}
                       >
                         View Warnings
@@ -193,7 +207,7 @@ export default function InvigilatorPage({
                       <button
                         className="ml-2 rounded text-red-500 hover:text-red-700"
                         onClick={() => {
-                          handleViewViolations(studentData.user_role_id);
+                          handleViewViolations(String(studentData.user_role_id));
                         }}
                       >
                         View Violations

@@ -70,7 +70,6 @@ class ExamAnsweringWindow(QMainWindow):
         # )
         
         # self.setWindowState(Qt.WindowFullScreen)
-        # self.setCursor(Qt.BlankCursor)
 
         gradient = QLinearGradient(0, 0, 0, self.height())
         gradient.setColorAt(0.0, QColor("#1e1e2f"))
@@ -264,22 +263,13 @@ class ExamAnsweringWindow(QMainWindow):
             event.accept()
 
     def end_exam(self):
-        self.exam_locked = False
+        room_details = {
+            "room_id": f"exam_{self.exam_question_id}",
+            "user_id": self.user_role_id
+        }
+        self.sio.emit('exam_ended', room_details)
 
-        self.lock_timer.stop()
-
-        # self.releaseKeyboard()
-        # self.releaseMouse()
-
-        self.setWindowFlags(Qt.Window)
-        self.showNormal()
-        self.show()
-
-        # self.setCursor(Qt.ArrowCursor)
-
-        self.setFocus(Qt.OtherFocusReason)
-        self.activateWindow()
-        self.raise_()
+        self.close()
 
         print("Exam ended")
 

@@ -107,6 +107,25 @@ async def join_exam_room(sid, room_details: dict):
         print(f"Error joining room: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@sio.on("exam_ended")
+async def exam_ended(sid, data: dict):
+    room_id = data.get("room_id")
+    user_id = data.get("user_id")
+    print(f"Exam ended for User {user_id} in Room {room_id}")
+    
+    if room_id in user_to_room_mapping:
+        del user_to_room_mapping[room_id]
+        print(f"Removed User {user_id} mapping to room {room_id} after exam ended")
+    if sid in sid_to_room_mapping:
+        del sid_to_room_mapping[sid]
+        print(f"Removed SID {sid} mapping to room {room_id} after exam ended")
+
+    response = await handle_exam_ended(room_id)
+    if response:
+        if student_analysis_data:
+            student_analysis_data[:] = [entry for entry in student_analysis_data if entry["user_role_id"] != user_id]
+            print(f"Removed student analysis data for User {user_id} after exam ended")
+
 # Note: Run using the `socket_app` object instead of `app`
 
 
@@ -301,3 +320,44 @@ async def receive_ai_analysis(data: dict):
                 "student_analysis_data": student_analysis_data
             },
         )
+
+@api.post("/exam_ended")
+async def handle_exam_ended(roomID: str):
+    print(f"Handling exam ended for Room ID: {roomID}")
+    exam_question_id = roomID.split("_")[-1]  
+    relevant_entries = [entry for entry in student_analysis_data if entry["exam_session_id"] == roomID]
+    now = datetime.now()
+    date_string = now.strftime("%d/%m/%Y, %I:%M:%S %p").lower()
+    print(f"Date Time to be inserted into EXAM_ANALYSIS_T: {date_string}")
+    # for each record, update the database with the analysis data
+    for entry in relevant_entries:
+        exam_question_id = entry["exam_session_id"].split("_")[-1]  # Extract the exam_question_id from the exam_session_id
+        role_id = entry["user_role_id"]
+        avg_yaw_angle = entry["average_yaw_angle"]
+        yaw_angle_status = entry["yaw_angle_status"]
+        number_of_warnings = entry["number_of_warnings"]
+        warnings_reasons = entry["warnings_reasons"]
+        number_of_violations = entry["number_of_violations"]
+        violations_reasons = entry["violations_reasons"]
+        phone_detection_status = entry["phone_detection_status"]
+
+        # Update the database with the analysis data
+        try: 
+            await db["EXAM_ANALYSIS_T"].insert_one(
+                {
+                    "exam_question_id": ObjectId(exam_question_id),
+                    "role_id": role_id,
+                    "average_yaw_angle": avg_yaw_angle,
+                    "yaw_angle_status": yaw_angle_status,
+                    "number_of_warnings": number_of_warnings,
+                    "warnings_reasons": warnings_reasons,
+                    "number_of_violations": number_of_violations,
+                    "violations_reasons": violations_reasons,
+                    "phone_detection_status": phone_detection_status,
+                    "timestamp": date_string
+                }
+            )
+        except Exception as error:
+            raise HTTPException(status_code=500, detail=str(error))   
+
+    

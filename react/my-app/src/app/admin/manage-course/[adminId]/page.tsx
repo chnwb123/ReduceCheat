@@ -77,6 +77,16 @@ export function UserDetailsDisplayPanelRadio({
   );
 }
 
+export const validateSelectionNumber = (
+  fieldValue: number | undefined,
+  fieldName: string,
+) => {
+  if (!fieldValue || fieldValue <= 0) {
+    return `At least one ${fieldName} must be selected.`;
+  }
+  return "";
+};
+
 function CourseDetailsDisplayPanel({
   courses,
   instructors,
@@ -102,12 +112,14 @@ function CourseDetailsDisplayPanel({
   const [filteringInstructors, setFilteringInstructors] =
     useState<UserDB["name"]>("");
   const [filteredInstructors, setFilteredInstructors] = useState<UserDB[]>([]);
-
   const [editingCourseDetails, setEditingCourseDetails] = useState<Course>({
     name: "",
     description: "",
     instructor_id: "",
     student_ids: [],
+  });
+  const [error, setError] = useState({
+    studentsSelectionError: "",
   });
 
   function getEditingCourseDetails(course: CourseDB) {
@@ -127,11 +139,23 @@ function CourseDetailsDisplayPanel({
 
   async function handleSubmitEditing(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     const payload = {
       editingId: editingId.editingId,
       editingCourseDetails: editingCourseDetails,
     };
+    console.log("Full course payload:", payload);
+
+    const studentSelectionError = validateSelectionNumber(
+      editingCourseDetails.student_ids?.length,
+      "Student",
+    );
+    setError({
+      studentsSelectionError: studentSelectionError,
+    });
+
+    if (studentSelectionError) {
+      return; // Stop submission if there are validation errors
+    }
 
     try {
       const response = await fetch(
@@ -230,6 +254,7 @@ function CourseDetailsDisplayPanel({
                 id={"course-name-editing-input"}
                 className="w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
+                required
                 placeholder="Course Name"
                 value={editingCourseDetails.name}
                 onChange={(e) =>
@@ -251,6 +276,7 @@ function CourseDetailsDisplayPanel({
                 id={"course-description-editing-input"}
                 className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
+                required
                 placeholder="Course Description"
                 value={editingCourseDetails.description}
                 onChange={(e) =>
@@ -321,6 +347,11 @@ function CourseDetailsDisplayPanel({
                 }}
                 selectedIds={editingCourseDetails.student_ids}
               />
+              {error.studentsSelectionError && (
+                <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">
+                  {error.studentsSelectionError}
+                </p>
+              )}
             </div>
 
             <button
@@ -424,8 +455,11 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
     useState<UserDB["name"]>("");
   const [filteredInstructors, setFilteredInstructors] = useState<UserDB[]>([]);
   const [courses, setCourses] = useState<CourseDB[]>([]);
-
   const [courseSubmitted, setCourseSubmitted] = useState<boolean>(false);
+  const [errors, setErrors] = useState({
+    studentsSelectionError: "",
+    InstructorSelectionError: "",
+  });
 
   console.log("Course Details:", courseDetails);
   console.log("Courses: ", courses);
@@ -515,6 +549,25 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
       courseDetails,
     };
     console.log("Full course payload:", payload);
+
+    const studentSelectionError = validateSelectionNumber(
+      courseDetails.student_ids?.length,
+      "Student",
+    );
+    const instructorSelectionError = validateSelectionNumber(
+      courseDetails.instructor_id ? 1 : 0,
+      "Instructor",
+    );
+
+    setErrors({
+      studentsSelectionError: studentSelectionError,
+      InstructorSelectionError: instructorSelectionError,
+    });
+
+    if (studentSelectionError || instructorSelectionError) {
+      return; // Stop submission if there are validation errors
+    }
+
     try {
       const response = await fetch(
         "/api/mongodb/write/admin/create-one-course",
@@ -586,10 +639,6 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
               label: "Manage User",
               href: `/admin/manage-user/${adminId}?name=${name}`,
             },
-            {
-              label: "About Admin",
-              href: `/admin/about-admin/${adminId}?name=${name}`,
-            },
           ]}
         />
         <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
@@ -607,6 +656,7 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
                 id={"course-name-input"}
                 className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
+                required
                 placeholder="Course Name"
                 value={courseDetails.name}
                 onChange={(e) =>
@@ -622,6 +672,7 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
                 id={"course-description-input"}
                 className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
+                required
                 placeholder="Course Description"
                 value={courseDetails.description}
                 onChange={(e) =>
@@ -657,6 +708,11 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
                   });
                 }}
               />
+              {errors.studentsSelectionError && (
+                <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">
+                  {errors.studentsSelectionError}
+                </p>
+              )}
 
               <h1 className="mt-5 text-lg font-medium text-white">
                 Instructors
@@ -683,6 +739,11 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
                 }
                 selectedId={courseDetails.instructor_id}
               />
+              {errors.InstructorSelectionError && (
+                <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">
+                  {errors.InstructorSelectionError}
+                </p>
+              )}
 
               <h1 className="mt-5 text-lg font-medium text-white">
                 Registering {courseDetails.student_ids?.length || 0} students

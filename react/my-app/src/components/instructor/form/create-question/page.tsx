@@ -7,6 +7,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import dayjs, { Dayjs } from "dayjs";
 import { CourseDB } from "@/app/api/mongodb/write/admin/create-one-course/route";
 import { UserDB } from "@/app/api/mongodb/write/admin/create-one-user/route";
+import { validateSelectionNumber } from "@/app/admin/manage-course/[adminId]/page";
 
 export type ExamData = {
   title: string;
@@ -43,6 +44,11 @@ export type SectionData = {
 
 type CreateQuestionFormProps = {
   instructorId: UserDB["role_id"] | string;
+};
+
+type SectionErrors = {
+  objectiveQuestionsError: string;
+  subjectiveQuestionsError: string;
 };
 
 function CustomTimePicker({
@@ -138,6 +144,7 @@ function SubjectiveQuestion({
             id={`s${index}-title`}
             className="w-full rounded-md border-2 border-white px-1 py-1 outline-none"
             type="text"
+            required
             placeholder="Subjective Question Title"
             value={title}
             onChange={(e) => onChange(index, { title: e.target.value })}
@@ -155,6 +162,7 @@ function SubjectiveQuestion({
             id={`s${index}-answer`}
             className="w-full rounded-md border-2 border-white px-1 py-1 outline-none"
             type="text"
+            required
             placeholder="Correct Answer"
             value={correctAnswer}
             onChange={(e) => onChange(index, { correctAnswer: e.target.value })}
@@ -171,7 +179,8 @@ function SubjectiveQuestion({
           <input
             id={`s${index}-marks`}
             className="w-24 rounded-md border-2 border-white px-1 py-1 outline-none"
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Marks"
             value={marks}
             onChange={(e) =>
@@ -228,6 +237,7 @@ function ObjectiveQuestion({
           <input
             id={`q${index}-opt-${label}`}
             className="w-full rounded-md border-2 border-white px-1 py-1 outline-none"
+            required
             type="text"
             placeholder={`Option ${label}`}
             value={options[i] ?? ""}
@@ -257,6 +267,7 @@ function ObjectiveQuestion({
             className="w-full rounded-md border-2 border-white px-1 py-1 outline-none"
             type="text"
             placeholder="Objective Question Title"
+            required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             name={`objective[${index}].title`}
@@ -297,6 +308,7 @@ function ObjectiveQuestion({
             id={`q${index}-answer`}
             className="w-full rounded-md border-2 border-white text-black bg-white px-1 py-1 outline-none"
             value={correctAnswer}
+            required
             onChange={(e) => setCorrect(e.target.value)}
             name={`objective[${index}].correctAnswer`}
           >
@@ -322,8 +334,10 @@ function ObjectiveQuestion({
           <input
             id={`q${index}-marks`}
             className="w-24 rounded-md border-2 border-white px-1 py-1 outline-none"
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Marks"
+            required
             value={marks}
             onChange={(e) => setMarks(Number(e.target.value) || 0)}
             name={`objective[${index}].marks`}
@@ -339,11 +353,13 @@ function Form({
   data,
   onChange,
   onRemove,
+  errors,
 }: {
   index: number;
   data: SectionData;
   onChange: (index: number, patch: Partial<SectionData>) => void;
   onRemove: (index: number) => void;
+  errors: SectionErrors;
 }) {
   const {
     sectionTitle,
@@ -448,6 +464,7 @@ function Form({
               <input
                 id={`sec${index}-title`}
                 value={sectionTitle}
+                required
                 onChange={(e) =>
                   onChange(index, { sectionTitle: e.target.value })
                 }
@@ -469,6 +486,7 @@ function Form({
                   onChange={(e) =>
                     onChange(index, { sectionDescription: e.target.value })
                   }
+                  required={displaySectionDescription}
                   className="w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                   type="text"
                   placeholder="Section Description"
@@ -498,6 +516,11 @@ function Form({
               >
                 Add Objective Question
               </button>
+              {errors.objectiveQuestionsError && (
+                <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">
+                  {errors.objectiveQuestionsError}
+                </p>
+              )}
             </td>
           </tr>
 
@@ -513,6 +536,11 @@ function Form({
               >
                 Add Subjective Question
               </button>
+              {errors.subjectiveQuestionsError && (
+                <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">
+                  {errors.subjectiveQuestionsError}
+                </p>
+              )}
             </td>
           </tr>
 
@@ -584,6 +612,13 @@ export default function CreateQuestionForm({
     },
   ]);
 
+  const [errors, setErrors] = useState<SectionErrors[]>([
+    { objectiveQuestionsError: "", subjectiveQuestionsError: "" },
+  ]);
+
+  const [dateTimeError, setDateTimeError] = useState<string>("");
+  const [totalMarksError, setTotalMarksError] = useState<string>("");
+
   const addSection = () => {
     setSections((prev) => [
       ...prev,
@@ -594,10 +629,15 @@ export default function CreateQuestionForm({
         subjectiveQuestions: [],
       },
     ]);
+    setErrors((prev) => [
+      ...prev,
+      { objectiveQuestionsError: "", subjectiveQuestionsError: "" },
+    ]);
   };
 
   const removeSection = (index: number) => {
     setSections((prev) => prev.filter((_, i) => i !== index));
+    setErrors((prev) => prev.filter((_, i) => i !== index));
   };
 
   const updateSection = (index: number, patch: Partial<SectionData>) => {
@@ -608,16 +648,17 @@ export default function CreateQuestionForm({
     });
   };
 
-  useEffect(() => {
-    if (!instructorId) {
-      return;
-    }
-
-    setExamData((prev) => ({
-      ...prev,
-      instructor_id: String(instructorId),
-    }));
-  }, [instructorId]);
+  const totalMarks = sections.reduce((sum, section) => {
+    const obj = section.objectiveQuestions.reduce(
+      (s, q) => s + (q.marks || 0),
+      0,
+    );
+    const subj = section.subjectiveQuestions.reduce(
+      (s, q) => s + (q.marks || 0),
+      0,
+    );
+    return sum + obj + subj;
+  }, 0);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -626,6 +667,74 @@ export default function CreateQuestionForm({
       sections,
     };
     console.log("Full exam payload:", payload);
+
+    const validateDateTime = (start: string, end: string) => {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      console.log(
+        `Validating DateTime: Start - ${startDate.getTime()}, End - ${endDate.getTime()}`,
+      );
+
+      if (startDate.getTime() >= endDate.getTime()) {
+        return "Start date/time must be before end date/time";
+      } else if (startDate.getTime() === endDate.getTime()) {
+        return "Start date/time and end date/time cannot be the same";
+      } else if (
+        (endDate.getTime() - startDate.getTime()) % (15 * 60 * 1000) !==
+        0
+      ) {
+        return "The difference between start and end date/time must be in intervals of 15 minutes";
+      }
+      return "";
+    };
+
+    const dateTimeError = validateDateTime(
+      examData.start_date_time,
+      examData.end_date_time,
+    );
+    setDateTimeError(dateTimeError);
+
+    if (dateTimeError) {
+      return;
+    }
+
+    const sectionErrors = sections.map((section) => ({
+      objectiveQuestionsError: validateSelectionNumber(
+        section.objectiveQuestions.length,
+        "Objective Questions",
+      ),
+      subjectiveQuestionsError: validateSelectionNumber(
+        section.subjectiveQuestions.length,
+        "Subjective Questions",
+      ),
+    }));
+
+    setErrors(sectionErrors);
+
+    if (
+      sectionErrors.some(
+        (sectionError) =>
+          sectionError.objectiveQuestionsError.length > 0 ||
+          sectionError.subjectiveQuestionsError.length > 0,
+      )
+    ) {
+      return;
+    }
+
+    const validateTotalMarks = (totalMarks: number) => {
+      if (totalMarks > 100 || totalMarks < 100) {
+        return "Total Marks should be equal to 100.";
+      }
+      return "";
+    };
+
+    const totalMarksValidation = validateTotalMarks(totalMarks);
+    setTotalMarksError(totalMarksValidation);
+
+    if (totalMarksValidation) {
+      return;
+    }
+
     try {
       setIsSubmitted(!isSubmitted);
       const response = await fetch(
@@ -644,18 +753,6 @@ export default function CreateQuestionForm({
     }
   }
 
-  const totalMarks = sections.reduce((sum, section) => {
-    const obj = section.objectiveQuestions.reduce(
-      (s, q) => s + (q.marks || 0),
-      0,
-    );
-    const subj = section.subjectiveQuestions.reduce(
-      (s, q) => s + (q.marks || 0),
-      0,
-    );
-    return sum + obj + subj;
-  }, 0);
-
   useEffect(() => {
     if (!instructorId) {
       return;
@@ -673,6 +770,10 @@ export default function CreateQuestionForm({
         if (response.ok) {
           const instructorCoursesData = await response.json();
           setInstructorCourses(instructorCoursesData);
+          setExamData((prev) => ({
+            ...prev,
+            instructor_id: String(instructorId),
+          }));
           console.log("Fetched instructor courses:", instructorCoursesData);
         }
       } catch (error) {
@@ -692,6 +793,7 @@ export default function CreateQuestionForm({
           </label>
           <select
             id={`course-select`}
+            required
             className="w-full rounded-md border-2 border-white text-white px-1 py-1 outline-none"
             value={examData.course_id}
             onChange={(e) =>
@@ -724,6 +826,7 @@ export default function CreateQuestionForm({
           <input
             id="exam-title"
             type="text"
+            required
             placeholder="Exam Title"
             value={examData.title}
             onChange={(e) =>
@@ -743,6 +846,7 @@ export default function CreateQuestionForm({
           <input
             id="exam-description"
             type="text"
+            required
             placeholder="Exam Description"
             value={examData.description}
             onChange={(e) =>
@@ -761,6 +865,11 @@ export default function CreateQuestionForm({
             setData={setExamData}
             type={"startDateTime"}
           />
+          {dateTimeError && (
+            <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">
+              {dateTimeError}
+            </p>
+          )}
         </div>
 
         <div className="mb-6 flex items-center gap-4">
@@ -792,11 +901,21 @@ export default function CreateQuestionForm({
             data={section}
             onChange={updateSection}
             onRemove={removeSection}
+            errors={
+              errors[i] ?? {
+                objectiveQuestionsError: "",
+                subjectiveQuestionsError: "",
+              }
+            }
           />
         ))}
 
         <div className="mt-6 mb-4 rounded bg-gray-100 text-black p-4">
           <p className="text-2xl font-bold">Total Exam Marks: {totalMarks}</p>
+          <span className="text-sm font-semibold tracking-wider text-red-400">
+            {" "}
+            {totalMarksError}{" "}
+          </span>
         </div>
 
         <button
