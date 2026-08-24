@@ -41,8 +41,9 @@ class FetchDataWorker(QThread):
 class ExamAnsweringWindow(QMainWindow):
     def __init__(self, exam_question_id=None, start_date_time=None, end_date_time=None, duration=None, date_time=None, role_id=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.student_answers = [] # Store student answers
         self.exam_locked = False
-        self.monitor_process = None
+        self.monitor_process = None # student/AI-background/main.py AI analysis program
         self.currentTime = QDateTime.currentDateTime()
         self.examStartDateTime = self.formatDateTime(start_date_time)
         self.examEndDateTime = self.formatDateTime(end_date_time)
@@ -269,6 +270,11 @@ class ExamAnsweringWindow(QMainWindow):
         }
         self.sio.emit('exam_ended', room_details)
 
+        try:
+            response = requests.post(f"http://127.0.0.1:8000/handle-student-answers", json={"exam_question_id": self.exam_question_id, "role_id": self.user_role_id, "student_answer": self.student_answers}) 
+        except requests.RequestException as e:
+            print(f"Error sending student answers to FastAPI: {e}")
+
         self.close()
 
         print("Exam ended")
@@ -302,6 +308,7 @@ class ExamAnsweringWindow(QMainWindow):
             return
 
         for section in section_data:
+            self.student_answers.append({section.get('id', 'N/A'): {"objective_answers": [], "subjective_answers": []}})
             row_widget = self.create_section_widget(section)
             self.scrollLayout.addWidget(row_widget)
 
@@ -368,8 +375,9 @@ class ExamAnsweringWindow(QMainWindow):
 
         # Objective Questions
         objectiveNumberIncrementer = 1
+        
         for objective in section.get('objective_questions', []):
-                
+            self.student_answers[-1][sectionId]["objective_answers"].append({"question_number": objectiveNumberIncrementer, "selected_option": None})
             objectiveTitle = objective.get('title', 'N/A')
             objectiveNumOfOptions = objective.get('numOptions', 'N/A')
             objectiveOptions = objective.get('options', [])
@@ -395,13 +403,14 @@ class ExamAnsweringWindow(QMainWindow):
             # Objective Options
             for idx, option in enumerate(objectiveOptions):
                 optionText = chr(65 + idx) + ". " + option # A. Option, B. Option, etc.
+                optionInChar = chr(65 + idx)  # A, B, C, D, etc.
                 radioButton = QRadioButton(optionText)
                 radioButton.setFont(textFont)
                 radioButton.setSizePolicy(
                     QSizePolicy.Expanding,
                     QSizePolicy.Minimum
                 )   
-                radioButton.toggled.connect(lambda checked, index=idx, opt=option, objQuesNumber=objectiveNumberIncrementer, sectionNum=sectionId: self.on_radio_button_toggled(checked, index, opt, objQuesNumber, sectionNum))
+                radioButton.toggled.connect(lambda checked, index=idx+1, optInChar=optionInChar, opt=option, objQuesNumber=objectiveNumberIncrementer, sectionNum=sectionId: self.on_radio_button_toggled(checked, index, opt, optInChar, objQuesNumber, sectionNum))
                 group.addButton(radioButton)
                 formLayout.addRow(radioButton)  # Display the option text
 
@@ -411,6 +420,7 @@ class ExamAnsweringWindow(QMainWindow):
         subjectiveNumberIncrementer = 1
         formLayout.addRow(SubjectiveSectionLabel)
         for subjective in section.get('subjective_questions', []):
+            self.student_answers[-1][sectionId]["subjective_answers"].append({"question_number": subjectiveNumberIncrementer, "typed_answer": None})
             subjectiveTitle = subjective.get('title', 'N/A')
             subjectiveCorrectAnswer = subjective.get('correctAnswer', 'N/A')
             subjectiveMarks = subjective.get('marks', 'N/A')
@@ -433,12 +443,36 @@ class ExamAnsweringWindow(QMainWindow):
 
         return row_widget
             
-    def on_radio_button_toggled(self, checked, index, option, objQuesNumber, sectionNum):
+    def on_radio_button_toggled(self, checked, index, option, optionInChar, objQuesNumber, sectionNum):
         if checked:
-            print(f"Selected option: {index}. {option} for Objective Question Number: {objQuesNumber} in Section: {sectionNum}")
+            print(f"Selected option: {index}. ({optionInChar}) {option} for Objective Question Number: {objQuesNumber} in Section: {sectionNum}")
+            for section in self.student_answers:
+                if sectionNum in section:
+                    for obj_answer in section[sectionNum]["objective_answers"]:
+                        if obj_answer["question_number"] == objQuesNumber:
+                            obj_answer["selected_option"] = optionInChar
+                            break
+                    break
+
+            for section in self.student_answers:
+                if sectionNum in section:
+                    for obj_answer in section[sectionNum]["objective_answers"]:
+                        print(f"Objective Question {obj_answer['question_number']} in Section {sectionNum} has selected option: {obj_answer['selected_option']}")
 
     def on_text_changed(self, text, subQuesNumber, sectionNum):
         print(f"Text changed for Subjective Question {subQuesNumber} in Section {sectionNum}: {text}")
+        for section in self.student_answers:
+            if sectionNum in section:
+                for subj_answer in section[sectionNum]["subjective_answers"]:
+                    if subj_answer["question_number"] == subQuesNumber:
+                        subj_answer["typed_answer"] = text
+                        break
+                break
+
+        for section in self.student_answers:
+            if sectionNum in section:
+                for subj_answer in section[sectionNum]["subjective_answers"]:
+                    print(f"Subjective Question {subj_answer['question_number']} in Section {sectionNum} has typed answer: {subj_answer['typed_answer']}")
 
     def apply_styles(self):
                 self.setStyleSheet("""

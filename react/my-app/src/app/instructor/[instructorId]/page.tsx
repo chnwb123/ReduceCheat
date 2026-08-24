@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export interface InstructorPageProps {
   params: Promise<{ instructorId: UserDB["role_id"] }>;
-  searchParams: Promise<{ name: UserDB["name"], examSessionId: ExamQuestionDB["_id"] }>;
+  searchParams: Promise<{ name: UserDB["name"], examSessionId: ExamQuestionDB["_id"], studentRoleId: UserDB["role_id"] }>;
 }
 
 export default function InstructorPage({

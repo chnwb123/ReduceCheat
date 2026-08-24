@@ -7,6 +7,7 @@ import { InvigilatorPageProps } from "@/app/invigilator/[invigilatorId]/page";
 import { io, type Socket } from "socket.io-client";
 import { Circle } from "lucide-react";
 import { ObjectId } from "mongodb";
+import Swal from "sweetalert2";
 
 export const GreenDotCircle = () => {
   return <Circle className="h-4 w-4 fill-green-500 text-green-500" />;
@@ -17,20 +18,21 @@ export const RedDotCircle = () => {
 };
 
 export type UserAnalysisData = {
-  user_role_id?: string,
-  role_id?: string, // for EXAM_ANALYSIS db
-  exam_session_id?: string,
-  exam_question_id?: ObjectId, // for EXAM_ANALYSIS db
-  yaw_angles_collection: number[],
-  latest_yaw_angle: string,
-  average_yaw_angle: number,
-  yaw_angle_status: string,
-  number_of_warnings: number,
-  warnings_reasons: string[],
-  number_of_violations: number,
-  violations_reasons: string[],
-  phone_detection_status: string
-}
+  user_role_id?: string;
+  role_id?: string; // for EXAM_ANALYSIS db
+  exam_session_id?: string;
+  exam_question_id?: ObjectId; // for EXAM_ANALYSIS db
+  yaw_angles_collection: number[];
+  latest_yaw_angle: string;
+  average_yaw_angle: number;
+  yaw_angle_status: string;
+  number_of_warnings: number;
+  warnings_reasons: string[];
+  number_of_violations: number;
+  violations_reasons: string[];
+  phone_detection_status: string;
+  cheating_suspicion_score: number;
+};
 
 export default function InvigilatorPage({
   params,
@@ -44,6 +46,19 @@ export default function InvigilatorPage({
   const socketRef = useRef<Socket | null>(null);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [isViewingWarnings, setIsViewingWarnings] = useState(false);
+
+  const handleAlertPhoneDetection = (studentId: string, dateTime: string, message: string) => {
+    Swal.fire({
+      title: "Phone Detection Alert!",
+      html: `<p><strong>Student ID:</strong> ${studentId}</p><p><strong>Date/Time:</strong> ${dateTime}</p><p><strong>Message:</strong> ${message}</p>`,
+      timer: 5000,
+      timerProgressBar: true,
+    }).then((result) => {
+      if (result.dismiss === Swal.DismissReason.timer) {
+        console.log("Closed by the timer");
+      }
+    });
+  };
 
   useEffect(() => {
     const getParams = async () => {
@@ -90,6 +105,13 @@ export default function InvigilatorPage({
       );
     });
 
+    socket.on("phone_detection_alert", (data) => {
+      console.log(
+        `Phone detection alert for student ${data.student_id} at ${data.date_time}: ${data.message}`,
+      );
+      handleAlertPhoneDetection(data.student_id, data.date_time, data.message);
+    });
+
     // Cleanup connection when component unmounts
     return () => {
       socket.disconnect();
@@ -122,27 +144,33 @@ export default function InvigilatorPage({
         className={`${viewingUserId ? "block" : "hidden"} fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm`}
       >
         <div className="relative w-full max-w-md rounded-xl bg-white px-4 py-1 shadow-2xl transition-all">
-            <h1 className="mb-2 text-center text-xl font-bold tracking-tight text-black">
-              Viewing {isViewingWarnings ? "Warnings" : "Violations"} for User
-              ID: {viewingUserId}
-            </h1>
-            <ul>
-              {isViewingWarnings
-                ? backendData.find(
+          <h1 className="mb-2 text-center text-xl font-bold tracking-tight text-black">
+            Viewing {isViewingWarnings ? "Warnings" : "Violations"} for User ID:{" "}
+            {viewingUserId}
+          </h1>
+          <ul>
+            {isViewingWarnings
+              ? backendData
+                  .find(
                     (studentData: UserAnalysisData) =>
                       studentData.user_role_id === viewingUserId,
-                  )?.warnings_reasons.map((reason: string, index: number) => (
-                    <li key={"warning-" + index}>{index + 1}. {reason}</li>
+                  )
+                  ?.warnings_reasons.map((reason: string, index: number) => (
+                    <li key={"warning-" + index}>
+                      {index + 1}. {reason}
+                    </li>
                   )) || []
-                : (
-                    backendData.find(
-                      (studentData: UserAnalysisData) =>
-                        studentData.user_role_id === viewingUserId,
-                    )?.violations_reasons || []
-                  ).map((reason: string, index: number) => (
-                    <li key={"violation-" + index}>{index + 1}. {reason}</li>
-                  ))}
-            </ul>
+              : (
+                  backendData.find(
+                    (studentData: UserAnalysisData) =>
+                      studentData.user_role_id === viewingUserId,
+                  )?.violations_reasons || []
+                ).map((reason: string, index: number) => (
+                  <li key={"violation-" + index}>
+                    {index + 1}. {reason}
+                  </li>
+                ))}
+          </ul>
         </div>
 
         <div className="ml-2 flex justify-end space-x-2 pt-2">
@@ -180,42 +208,58 @@ export default function InvigilatorPage({
             <p>No student analysis data available.</p>
           ) : (
             <div className="text-md grid grid-cols-5 gap-x-5 gap-y-2 p-2">
-              {backendData.filter((studentData: UserAnalysisData) => studentData.exam_session_id === `exam_${examSessionId}`).map((studentData: UserAnalysisData, index: number) => (
-                <div key={index} className="rounded bg-gray-300 p-2 text-black">
-                  <p>Student ID: {studentData.user_role_id}</p>
-                  <p>
-                    Average Head Tilt Angle:{" "}
-                    {studentData.average_yaw_angle.toFixed(2)}
-                  </p>
-                  <p>Head Tilt Status: {studentData.yaw_angle_status}</p>
-                  <p>
-                    Number of Warnings: {studentData.number_of_warnings}{" "}
-                    {studentData.number_of_warnings > 0 && (
-                      <button
-                        className="ml-2 rounded text-orange-700 hover:text-orange-900"
-                        onClick={() => {
-                          handleViewWarnings(String(studentData.user_role_id));
-                        }}
-                      >
-                        View Warnings
-                      </button>
-                    )}
-                  </p>
-                  <p>
-                    Number of Violations: {studentData.number_of_violations}{" "}
-                    {studentData.number_of_violations > 0 && (
-                      <button
-                        className="ml-2 rounded text-red-500 hover:text-red-700"
-                        onClick={() => {
-                          handleViewViolations(String(studentData.user_role_id));
-                        }}
-                      >
-                        View Violations
-                      </button>
-                    )}
-                  </p>
-                </div>
-              ))}
+              {backendData
+                .filter(
+                  (studentData: UserAnalysisData) =>
+                    studentData.exam_session_id === `exam_${examSessionId}`,
+                )
+                .map((studentData: UserAnalysisData, index: number) => (
+                  <div
+                    key={index}
+                    className="rounded bg-gray-300 p-2 text-black"
+                  >
+                    <p className="font-bold">Student ID: {studentData.user_role_id}</p>
+                    <p>
+                      Average Head Tilt Angle:{" "}
+                      {studentData.average_yaw_angle.toFixed(2)}
+                    </p>
+                    <p>
+                      Current Head Tilt Angle: {studentData.latest_yaw_angle}
+                    </p>
+                    <p>Head Tilt Status: {studentData.yaw_angle_status}</p>
+                    <p>
+                      Number of Warnings: {studentData.number_of_warnings}{" "}
+                      {studentData.number_of_warnings > 0 && (
+                        <button
+                          className="ml-2 rounded text-orange-700 hover:text-orange-900"
+                          onClick={() => {
+                            handleViewWarnings(
+                              String(studentData.user_role_id),
+                            );
+                          }}
+                        >
+                          View Warnings
+                        </button>
+                      )}
+                    </p>
+                    <p>
+                      Number of Violations: {studentData.number_of_violations}{" "}
+                      {studentData.number_of_violations > 0 && (
+                        <button
+                          className="ml-2 rounded text-red-500 hover:text-red-700"
+                          onClick={() => {
+                            handleViewViolations(
+                              String(studentData.user_role_id),
+                            );
+                          }}
+                        >
+                          View Violations
+                        </button>
+                      )}
+                    </p>
+                    <p className="font-bold">Cheating Suspicion Score: {studentData.cheating_suspicion_score.toFixed(2)}%</p>
+                  </div>
+                ))}
             </div>
           )}
         </div>

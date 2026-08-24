@@ -256,12 +256,13 @@ async def receive_ai_analysis(data: dict):
             "yaw_angles_collection": [yaw_angle],
             "latest_yaw_angle": yaw_angle,
             "average_yaw_angle": 0,
-            "yaw_angle_status": "normal",
+            "yaw_angle_status": "Normal",
             "number_of_warnings": 0,
             "warnings_reasons": [],
             "number_of_violations": 0,
             "violations_reasons": [],
-            "phone_detection_status": "detected" if mobile_phone_detected else "not_detected"
+            "phone_detection_status": "detected" if mobile_phone_detected else "not_detected",
+            "cheating_suspicion_score": 0
         }) 
     else:
         # Update existing entry for the same role_id and exam_question_id
@@ -280,12 +281,13 @@ async def receive_ai_analysis(data: dict):
                 "yaw_angles_collection": [yaw_angle],
                 "latest_yaw_angle": yaw_angle,
                 "average_yaw_angle": 0,
-                "yaw_angle_status": "normal",
+                "yaw_angle_status": "Normal",
                 "number_of_warnings": 0,
                 "warnings_reasons": [],
                 "number_of_violations": 0,
                 "violations_reasons": [],
-                "phone_detection_status": "detected" if mobile_phone_detected else "not_detected"
+                "phone_detection_status": "detected" if mobile_phone_detected else "not_detected",
+                "cheating_suspicion_score": 0
             })
 
         # Processing yaw angle & phone detection status to determine warnings and violations
@@ -295,24 +297,38 @@ async def receive_ai_analysis(data: dict):
                 avg_yaw_angle = sum(latest_yaw_angles) / len(latest_yaw_angles)
                 print(f"Average Yaw Angle for student {role_id}: {avg_yaw_angle} degrees")
                 entry["average_yaw_angle"] = avg_yaw_angle
+                entry["cheating_suspicion_score"] = ((entry["number_of_warnings"]) * 2) + ((entry["number_of_violations"]) * 4)   # Calculate cheating suspicion score as a percentage
 
                 # Process the latest 4 yaw angles to determine if the student is looking away
                 if len(latest_yaw_angles) % 4 == 0:  # Check if we have a multiple of 4 yaw angles
                     last_consecutive_angles = latest_yaw_angles[-4:]
                     if all(abs(angle) >= 70 for angle in last_consecutive_angles):
                         entry["number_of_violations"] += 1
+                        entry["yaw_angle_status"] = "Needs Attention"
                         entry["violations_reasons"].append(f"Looking away from screen with head tilt angle >= 70 degrees at {date_time}")
                     elif all(abs(angle) >= 40 for angle in last_consecutive_angles):
                         entry["number_of_warnings"] += 1
+                        entry["yaw_angle_status"] = "May Need Attention"
                         entry["warnings_reasons"].append(f"Looking away from screen with head tilt angle >= 40 degrees at {date_time}")
                     elif all(abs(angle) == 0 for angle in last_consecutive_angles):
                         entry["number_of_violations"] += 1
+                        entry["yaw_angle_status"] = "Suspicious Cheating Behavior"
                         entry["violations_reasons"].append(f"Student's head is not detected for 4 seconds at {date_time}")
+                    else:
+                        entry["yaw_angle_status"] = "Normal"
 
                 # Process mobile phone detection status
                 if entry["phone_detection_status"] == "detected":
                     entry["number_of_violations"] += 1
                     entry["violations_reasons"].append(f"Mobile phone detected in the frame at {date_time}")
+                    await sio.emit(
+                        "phone_detection_alert",
+                        {
+                            "student_id": role_id,
+                            "date_time": date_time,
+                            "message": "Mobile phone detected in the frame!"
+                        },
+                    )
 
         await sio.emit(
             "student_analysis_data",
@@ -321,14 +337,19 @@ async def receive_ai_analysis(data: dict):
             },
         )
 
+def getCurrentDateTimeForMongoDB():
+    now = datetime.now()
+    date_string = now.strftime("%d/%m/%Y, %I:%M:%S %p").lower()
+    print(f"Date Time to be inserted into MongoDB: {date_string}")
+    return date_string
+
 @api.post("/exam_ended")
 async def handle_exam_ended(roomID: str):
     print(f"Handling exam ended for Room ID: {roomID}")
     exam_question_id = roomID.split("_")[-1]  
     relevant_entries = [entry for entry in student_analysis_data if entry["exam_session_id"] == roomID]
-    now = datetime.now()
-    date_string = now.strftime("%d/%m/%Y, %I:%M:%S %p").lower()
-    print(f"Date Time to be inserted into EXAM_ANALYSIS_T: {date_string}")
+    date_string = getCurrentDateTimeForMongoDB()
+    
     # for each record, update the database with the analysis data
     for entry in relevant_entries:
         exam_question_id = entry["exam_session_id"].split("_")[-1]  # Extract the exam_question_id from the exam_session_id
@@ -340,6 +361,7 @@ async def handle_exam_ended(roomID: str):
         number_of_violations = entry["number_of_violations"]
         violations_reasons = entry["violations_reasons"]
         phone_detection_status = entry["phone_detection_status"]
+        cheating_suspicion_score = entry["cheating_suspicion_score"]
 
         # Update the database with the analysis data
         try: 
@@ -354,10 +376,33 @@ async def handle_exam_ended(roomID: str):
                     "number_of_violations": number_of_violations,
                     "violations_reasons": violations_reasons,
                     "phone_detection_status": phone_detection_status,
+                    "cheating_suspicion_score": cheating_suspicion_score,
                     "timestamp": date_string
                 }
             )
         except Exception as error:
             raise HTTPException(status_code=500, detail=str(error))   
 
-    
+@api.post("/handle-student-answers")
+async def handle_student_answers(data: dict):
+    exam_question_id = data.get("exam_question_id")
+    role_id = data.get("role_id")
+    student_answers = data.get("student_answer")
+    date_string = getCurrentDateTimeForMongoDB()
+
+    print(f"Received student answers for Exam Question ID: {exam_question_id} and Role ID: {role_id}")
+    print(f"Student Answers: {student_answers}")
+
+    # Update the database with the student answers
+    try:
+        await db["STUDENT_EXAM_ANSWER_SUBMISSION_T"].insert_one(
+            {
+                "exam_question_id": ObjectId(exam_question_id),
+                "role_id": role_id,
+                "student_answers": student_answers,
+                "timestamp": date_string
+            }
+        )
+        return {"message": "Student answers received and stored successfully."}
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))

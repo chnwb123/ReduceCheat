@@ -58,3 +58,178 @@ left: -40 to -69, -70 + critical
 middle: -20 to 20, considered normal
 warning: -21 to -39, 21 to 39
 right: 40 to 69, 70 + critical
+
+[
+  {
+    sectionTitle: 'Section 1 Title',
+    sectionDescription: 'Section 1 Des',
+    objectiveQuestions: [ [Object], [Object] ],
+    subjectiveQuestions: [ [Object], [Object] ]
+  },
+  {
+    sectionTitle: 'Section 2 Title',
+    sectionDescription: 'Section 2 Desc',
+    objectiveQuestions: [ [Object], [Object] ],
+    subjectiveQuestions: [ [Object], [Object] ]
+  }
+]
+
+
+
+{
+    "examData": {
+        "title": "Introduction to Python",
+        "description": "To examine Python's prodiciency",
+        "start_date_time": "2026-08-26 11:00 AM",
+        "end_date_time": "2026-08-26 12:15 AM",
+        "instructor_id": "INS_1",
+        "course_id": "6a84ad63ebe65b39f9606ffc",
+        "start_minutes": 660,
+        "end_minutes": 15
+    },
+    "sections": [
+        {
+            "sectionTitle": "Section 1 Title",
+            "sectionDescription": "Section 1 Des",
+            "objectiveQuestions": [
+                {
+                    "title": "Sec 1 Obj 1",
+                    "numOptions": 4,
+                    "options": [
+                        "Sec 1 Obj 1 A",
+                        "Sec 1 Obj 1 B",
+                        "Sec 1 Obj 1 C",
+                        "Sec 1 Obj 1 D"
+                    ],
+                    "correctAnswer": "C",
+                    "marks": 5
+                },
+                {
+                    "title": "Sec 1 Obj 2",
+                    "numOptions": 4,
+                    "options": [
+                        "Sec 1 Obj 2 A",
+                        "Sec 1 Obj 2 B",
+                        "Sec 1 Obj 2 C",
+                        "Sec 1 Obj 2 D"
+                    ],
+                    "correctAnswer": "A",
+                    "marks": 5
+                }
+            ],
+            "subjectiveQuestions": [
+                {
+                    "title": "Sec 1 Sub 1",
+                    "correctAnswer": "Sec 1 Sub 1 Ans",
+                    "marks": 5
+                },
+                {
+                    "title": "Sec 1 Sub 2",
+                    "correctAnswer": "Sec 1 Sub 2 Ans",
+                    "marks": 5
+                }
+            ]
+        },
+        {
+            "sectionTitle": "Section 2 Title",
+            "sectionDescription": "Section 2 Desc",
+            "objectiveQuestions": [
+                {
+                    "title": "Sec 2 Obj 1 ",
+                    "numOptions": 4,
+                    "options": [
+                        "Sec 2 Obj 1 A",
+                        "Sec 2 Obj 1 B",
+                        "Sec 2 Obj 1 C",
+                        "Sec 2 Obj 1 D"
+                    ],
+                    "correctAnswer": "B",
+                    "marks": 5
+                },
+                {
+                    "title": "Sec 2 Obj 2",
+                    "numOptions": 4,
+                    "options": [
+                        "Sec 2 Obj 2 A",
+                        "Sec 2 Obj 2 B",
+                        "Sec 2 Obj 2 C",
+                        "Sec 2 Obj 2 D"
+                    ],
+                    "correctAnswer": "D",
+                    "marks": 5
+                }
+            ],
+            "subjectiveQuestions": [
+                {
+                    "title": "Sec 2 Sub 1",
+                    "correctAnswer": "Sec 2 Sub 1 Ans",
+                    "marks": 5
+                },
+                {
+                    "title": "Sec 2 Sub 2",
+                    "correctAnswer": "Sec 2 Sub 2 Ans",
+                    "marks": 5
+                }
+            ]
+        }
+    ]
+}
+
+[
+    {
+        "_id": "6a8c7e6b5aec3b0ba2f87c40",
+        "exam_question_id": "6a84b815d67ff831da3ddb4a",
+        "role_id": "STU_1",
+        "student_answers": [
+            {
+                "1": {
+                    "objective_answers": [
+                        {
+                            "question_number": 1,
+                            "selected_option": null
+                        },
+                        {
+                            "question_number": 2,
+                            "selected_option": null
+                        },
+                        {
+                            "question_number": 3,
+                            "selected_option": null
+                        }
+                    ],
+                    "subjective_answers": [
+                        {
+                            "question_number": 1,
+                            "typed_answer": null
+                        },
+                        {
+                            "question_number": 2,
+                            "typed_answer": null
+                        }
+                    ]
+                }
+            },
+            {
+                "2": {
+                    "objective_answers": [
+                        {
+                            "question_number": 1,
+                            "selected_option": null
+                        },
+                        {
+                            "question_number": 2,
+                            "selected_option": null
+                        }
+                    ],
+                    "subjective_answers": [
+                        {
+                            "question_number": 1,
+                            "typed_answer": null
+                        }
+                    ]
+                }
+            }
+        ],
+        "timestamp": "25/08/2026, 01:24:59 am"
+    }
+]

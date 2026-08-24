@@ -7,6 +7,7 @@ import { InstructorPageProps } from "@/app/instructor/[instructorId]/page";
 import { UserAnalysisData } from "@/app/invigilator/monitor-specific-exam/[invigilatorId]/page";
 import { Loading } from "@/components/general/animation/loading/page";
 import { ObjectId } from "mongodb";
+import Link from "next/link";
 
 export default function InstructorPage({
   params,
@@ -148,43 +149,64 @@ export default function InstructorPage({
             <p>No student analysis data available.</p>
           ) : (
             <div className="text-md grid grid-cols-5 gap-x-5 gap-y-2 p-2">
-              {studentAnalysisPerformance.filter((studentData: UserAnalysisData) => String(studentData.exam_question_id) === examSessionId).map((studentData: UserAnalysisData, index: number) => (
-                <div key={index} className="rounded bg-gray-300 p-2 text-black">
-                  <p>Student ID: {studentData.role_id}</p>
-                  <p>
-                    Average Head Tilt Angle:{" "}
-                    {studentData.average_yaw_angle.toFixed(2)}
-                  </p>
-                  <p>Head Tilt Status: {studentData.yaw_angle_status}</p>
-                  <p>
-                    Number of Warnings: {studentData.number_of_warnings}{" "}
-                    {studentData.number_of_warnings > 0 && (
-                      <button
-                        className="ml-2 rounded text-orange-700 hover:text-orange-900"
-                        onClick={() => {
-                          handleViewWarnings(String(studentData.role_id));
-                        }}
-                      >
-                        View Warnings
-                      </button>
-                    )}
-                  </p>
-                  <p>
-                    Number of Violations: {studentData.number_of_violations}{" "}
-                    {studentData.number_of_violations > 0 && (
-                      <button
-                        className="ml-2 rounded text-red-500 hover:text-red-700"
-                        onClick={() => {
-                          handleViewViolations(String(studentData.role_id));
-                        }}
-                      >
-                        View Violations
-                      </button>
-                    )}
-                  </p>
-                  <p>Phone Detection Status: {studentData.phone_detection_status === "not_detected" ? "Not Detected" : "Detected"}</p>
-                </div>
-              ))}
+              {studentAnalysisPerformance
+                .filter(
+                  (studentData: UserAnalysisData) =>
+                    String(studentData.exam_question_id) === examSessionId,
+                )
+                .map((studentData: UserAnalysisData, index: number) => (
+                  <div
+                    key={index}
+                    className="rounded bg-gray-300 p-2 text-black"
+                  >
+                    <p className="font-bold">Student ID: {studentData.role_id}</p>
+                    <p>
+                      Average Head Tilt Angle:{" "}
+                      {studentData.average_yaw_angle.toFixed(2)}
+                    </p>
+                    {/* <p>Head Tilt Status: {studentData.yaw_angle_status}</p> */}
+                    <p>
+                      Number of Warnings: {studentData.number_of_warnings}{" "}
+                      {studentData.number_of_warnings > 0 && (
+                        <button
+                          className="ml-2 rounded text-orange-700 hover:text-orange-900"
+                          onClick={() => {
+                            handleViewWarnings(String(studentData.role_id));
+                          }}
+                        >
+                          View Warnings
+                        </button>
+                      )}
+                    </p>
+                    <p>
+                      Number of Violations: {studentData.number_of_violations}{" "}
+                      {studentData.number_of_violations > 0 && (
+                        <button
+                          className="ml-2 rounded text-red-500 hover:text-red-700"
+                          onClick={() => {
+                            handleViewViolations(String(studentData.role_id));
+                          }}
+                        >
+                          View Violations
+                        </button>
+                      )}
+                    </p>
+                    <p className="font-bold">Cheating Suspicion Score: {studentData.cheating_suspicion_score?.toFixed(2)}%</p>
+                    {/* <p>
+                      Phone Detection Status:{" "}
+                      {studentData.phone_detection_status === "not_detected"
+                        ? "Not Detected"
+                        : "Detected"}
+                    </p> */}
+                    <Link
+                      href={`/instructor/view-specific-student-answer/${instructorId}?name=${name}&examSessionId=${examSessionId}&studentRoleId=${studentData.role_id}`}
+                    >
+                      <div className="text-md mt-4 rounded border border-slate-800 bg-slate-800 px-4 py-2 text-center font-semibold text-white shadow-md transition hover:bg-white/20 hover:text-black">
+                        View Student&apos;s Exam Answer
+                      </div>
+                    </Link>
+                  </div>
+                ))}
             </div>
           )}
         </div>
