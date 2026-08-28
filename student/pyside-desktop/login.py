@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QLinearGradient, QPalette, QBrush, QColor, QFont, QPixmap
 from main_menu import HomePage
 
-
 # Thread to handle the network request
 class LoginWorker(QThread):
     success = Signal(str, dict)
@@ -51,7 +50,7 @@ class LoginForm(QWidget):
         self.setFixedSize(500, 550)
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
         
-        # 1. Apply a beautiful dark gradient background to the entire window
+        # Apply dark gradient background to the entire window
         gradient = QLinearGradient(0, 0, 0, self.height())
         gradient.setColorAt(0.0, QColor("#1e1e2f"))
         gradient.setColorAt(1.0, QColor("#111119"))
@@ -61,7 +60,7 @@ class LoginForm(QWidget):
         self.setPalette(palette)
         self.setAutoFillBackground(True)
 
-        # 2. Main layout mapping
+        # Main layout mapping
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(40, 50, 40, 50)
         main_layout.setSpacing(0)
@@ -72,7 +71,7 @@ class LoginForm(QWidget):
         image_label.setPixmap(pixmap)
         main_layout.addWidget(image_label)
 
-        # 3. Logo/Header Label
+        # Logo/Header Label
         title_label = QLabel("Welcome to ReduceCheat")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setObjectName("TitleLabel")
@@ -87,7 +86,7 @@ class LoginForm(QWidget):
         
         main_layout.addSpacing(40)
 
-        # 4. Input Fields Setup
+        # Input Fields Setup
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username or Email")
         self.username_input.setObjectName("InputField")
@@ -105,7 +104,7 @@ class LoginForm(QWidget):
         
         main_layout.addSpacing(12)
 
-        # 5. Forgot Password Link
+        # Forgot Password Link
         forgot_layout = QHBoxLayout()
         forgot_layout.addStretch()
         forgot_btn = QPushButton("Forgot Password?")
@@ -117,7 +116,7 @@ class LoginForm(QWidget):
         main_layout.addLayout(forgot_layout)
         main_layout.addSpacing(28)
 
-        # 6. Primary Action Login Button
+        # Primary Action Login Button
         self.login_btn = QPushButton("LOG IN")
         self.login_btn.setObjectName("PrimaryButton")
         self.login_btn.setCursor(Qt.PointingHandCursor)
@@ -126,7 +125,7 @@ class LoginForm(QWidget):
 
         main_layout.addStretch()
 
-        # 7. Signup Row Footer
+        # Signup Row Footer
         footer_layout = QHBoxLayout()
         footer_layout.setAlignment(Qt.AlignCenter)
         
@@ -174,7 +173,6 @@ class LoginForm(QWidget):
         # Open the Exam Answering Window
         self.main_menu = HomePage(student_role_id=role_id)
         self.main_menu.show()
-
 
     def on_login_error(self, error_msg):
         self.status_label.setText(error_msg)

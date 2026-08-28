@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, QTimer, QDateTime, QEventLoop, QSize, QThread, Si
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtGui import QFont, QLinearGradient, QColor, QPalette, QBrush
 
-# 1. Background Worker to make network requests without freezing the UI
+# Background Worker to make network requests without freezing the UI
 class FetchDataWorker(QThread):
     data_ready = Signal(object) # Signal to send data back to the main thread
 
@@ -37,7 +37,7 @@ class FetchDataWorker(QThread):
         reply.deleteLater()
         self.manager.deleteLater()
 
-# 2. Main PySide6 Window
+# Main PySide6 Window
 class ExamAnsweringWindow(QMainWindow):
     def __init__(self, exam_question_id=None, start_date_time=None, end_date_time=None, duration=None, date_time=None, role_id=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -162,7 +162,7 @@ class ExamAnsweringWindow(QMainWindow):
         formLayout.addRow(numOfSectionLabel, self.numOfSections)
         formLayout.addRow(timeRemainingLabel, self.timeRemaining)
 
-        # 3. Start data fetch automatically
+        # Start data fetch automatically
         self.load_data_from_fastapi()
         self.apply_styles()   
         
@@ -180,18 +180,6 @@ class ExamAnsweringWindow(QMainWindow):
         @self.sio.on('room_joined')
         def on_room_joined(data):
             print(f"Room joined successfully: {data.get('message')}")
-
-        # @self.sio.event
-        # def disconnect():
-        #     print(f"{self.user_role_id} has been disconnected from exam answering page.") 
-
-        # @self.sio.on('server_status')
-        # def on_server_status(data):
-        #     print("Server status:", data)
-
-        # @self.sio.on('receive_data')
-        # def on_receive_data(data):
-        #     print("Received data from server:", data)
 
         try:
             self.sio.connect('http://127.0.0.1:8000')  # Adjust the URL if needed

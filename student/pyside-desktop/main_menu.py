@@ -7,7 +7,7 @@ from PySide6.QtGui import QLinearGradient, QPalette, QBrush, QColor, QFont
 from exam_answering import ExamAnsweringWindow
 from PySide6.QtCore import Qt, QLocale, QDate, QTime, QDateTime
 
-# 1. Background Worker to make network requests without freezing the UI
+# Background Worker to make network requests without freezing the UI
 class FetchDataWorker(QThread):
     data_ready = Signal(object) # Signal to send data back to the main thread
 
@@ -35,7 +35,7 @@ class FetchDataWorker(QThread):
         reply.deleteLater()
         self.manager.deleteLater()
 
-# 2. Main PySide6 Window
+# Main PySide6 Window
 class HomePage(QMainWindow):
     def __init__(self, student_role_id=None):
         super().__init__()
@@ -121,11 +121,11 @@ class HomePage(QMainWindow):
                 self.label2.setText(f"Exam session found: {len(data_dict)}")
 
     def add_item_with_button(self, exam_question_id, text, description, startDate, endDate, duration):
-        # 2. Create a base QListWidgetItem
+        # Create a base QListWidgetItem
         item = QListWidgetItem()
         self.list_widget.addItem(item)
 
-        # 3. Create the custom container widget and horizontal layout
+        # Create the custom container widget and horizontal layout
         row_widget = QWidget()
         layout = QFormLayout(row_widget)
         layout.setContentsMargins(5, 5, 5, 25)  # Tighten padding inside the row
@@ -134,7 +134,7 @@ class HomePage(QMainWindow):
         headingFont = QFont("Segoe UI", 10, QFont.Bold)
         normalFont = QFont("Segoe UI", 10)
 
-        # 4. Create row content (Label + Button)
+        # Create row content (Label + Button)
         questionLabel = QLabel("Exam Title:")
         questionLabel.setFont(headingFont)
         questionText = QLabel(text)
@@ -169,7 +169,7 @@ class HomePage(QMainWindow):
         # Connect button click event and pass the specific item context
         joinExamButton.clicked.connect(lambda: self.handle_button_click(item, exam_question_id, startDate, endDate, duration, dateTime, self.student_role_id))
 
-        # 5. Add elements to layout (with a stretch to push button to the right)
+        # Add elements to layout (with a stretch to push button to the right)
         layout.addRow(questionLabel, questionText)
         layout.addRow(descriptionLabel, descriptionText)
         layout.addRow(dateTimeLabel, dateTimeText)
@@ -177,10 +177,10 @@ class HomePage(QMainWindow):
         layout.addRow(startsInLabel, startsInText)
         layout.addRow("", self.joinExamButtons[exam_question_id])
 
-        # 6. Adjust row size hint so the list widget wraps the custom container properly
+        # Adjust row size hint so the list widget wraps the custom container properly
         item.setSizeHint(row_widget.sizeHint())
 
-        # 7. Associate the custom widget with the QListWidgetItem
+        # Associate the custom widget with the QListWidgetItem
         self.list_widget.setItemWidget(item, row_widget)
 
         targetStartDateTime = self.parse_exam_datetime(startDate)
