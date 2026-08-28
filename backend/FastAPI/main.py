@@ -12,13 +12,36 @@ import bcrypt
 from fastapi.encoders import jsonable_encoder
 load_dotenv(r"c:\FY_FYP\ReduceCheat\backend\FastAPI\.env.local")
 
+# Login Details Model
 class LoginData(BaseModel):
     username: str
     password: str
 
+# Student AI Analysis Data Model
 class AIAnalysisData(BaseModel):
-    yaw_angle: float
+    user_role_id: str
+    exam_session_id: str
+    yaw_angles_collection: list
+    latest_yaw_angle: float
+    average_yaw_angle: float
+    yaw_angle_status: str
+    number_of_warnings: int
+    warnings_reasons: list
+    number_of_violations: int
+    violations_reasons: list
+    phone_detection_status: str
+    cheating_suspicion_score: float
 
+class StudentAnswers(BaseModel):
+    exam_question_id: str
+    role_id: str
+    student_answers: list
+    date_string: str
+
+# class AIAnalysisData(BaseModel):
+#     yaw_angle: float
+
+# Helper function to change ObjectId to string for JSON serialization
 def serialize_doc(doc):
     doc["_id"] = str(doc["_id"])
     return doc
@@ -48,7 +71,7 @@ sid_to_room_mapping = {}
 user_to_room_mapping = {}
 student_analysis_data = [] # List to store each student analysis data for the invigilator to monitor
 
-# Create a Socket.IO Async Server allowing your React origin
+# Create a Socket.IO Async Server allowing my React origin
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins=allowed_origins)
 
 # api.mount("socket.io", socketio.ASGIApp(sio))
@@ -56,18 +79,20 @@ sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins=allowed_origi
 # Wrap FastAPI app with Socket.IO ASGI application
 socket_app = socketio.ASGIApp(sio, other_asgi_app=api)
 
+
+# <------------------ ////// Socket.IO Events Handling ////// ------------------->
 @sio.event
 async def connect(sid, environ):
     print(f"Client connected: {sid}")
     # Immediately send data to the connected client
     await sio.emit('server_status', {'data': 'Connected successfully!'}, to=sid)
 
-@sio.event
-async def request_data(sid, data):
-    print(f"Received request from client: {data}")
-    # Process data and broadcast/respond
-    payload = {"message": "Here is your processed backend data"}
-    await sio.emit('receive_data', payload, to=sid)
+# @sio.event
+# async def request_data(sid, data):
+#     print(f"Received request from client: {data}")
+#     # Process data and broadcast/respond
+#     payload = {"message": "Here is your processed backend data"}
+#     await sio.emit('receive_data', payload, to=sid)
 
 @sio.event
 async def disconnect(sid):
@@ -128,39 +153,39 @@ async def exam_ended(sid, data: dict):
 
 # Note: Run using the `socket_app` object instead of `app`
 
+# <------------------ ////// Socket.IO Events Handling ////// ------------------->
+
+
 
 # FastAPI Server Endpoints
+# default endpoint for testing if the server is running
 @api.get("/")
 def index():
     return {"message": "Hello, This is my new FastAPI application!"}
 
-@api.get("/students")
-async def get_students():
-    try:
-        students = await db["USER_T"].find({"roleType": "Student"}).to_list(length=1000)
-        return [serialize_doc(student) for student in students]
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=str(error))
+# @api.get("/students")
+# async def get_students():
+#     try:
+#         students = await db["USER_T"].find({"roleType": "Student"}).to_list(length=1000)
+#         return [serialize_doc(student) for student in students]
+#     except Exception as error:
+#         raise HTTPException(status_code=500, detail=str(error))
     
-@api.get("/exam-questions")
-async def get_exam_questions():
-    try:
-        questions = await db["EXAM_QUESTION_T"].find().to_list(length=1000)
-        return [serialize_doc(question) for question in questions]
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=str(error))
-    
-@api.get("/exam-question/{exam_question_id}")
-async def get_exam_question(exam_question_id: str):
-    try:
-        question = await db["EXAM_QUESTION_T"].find_one({"_id": ObjectId(exam_question_id)})
-        if not question:
-            raise HTTPException(status_code=404, detail="Exam question not found")
-        # return serialize_doc(question)
-        return jsonable_encoder(question, custom_encoder={ObjectId: str})
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=str(error))
+# @api.get("/exam-questions")
+# async def get_exam_questions():
+#     try:
+#         questions = await db["EXAM_QUESTION_T"].find().to_list(length=1000)
+#         return [serialize_doc(question) for question in questions]
+#     except Exception as error:
+#         raise HTTPException(status_code=500, detail=str(error))
 
+
+
+
+# <------------------ ////// Student Pre-Exam/ Exam Processing ////// ------------------->
+
+
+# Login endpoint for user authentication
 @api.post("/login")
 async def login(data: LoginData):
     # Fetch data from MongoDB
@@ -176,6 +201,19 @@ async def login(data: LoginData):
 
     return {"message": "Login successful", "user": serialize_doc(user)}
 
+# Get a specific exam question by its ID
+@api.get("/exam-question/{exam_question_id}")
+async def get_exam_question(exam_question_id: str):
+    try:
+        question = await db["EXAM_QUESTION_T"].find_one({"_id": ObjectId(exam_question_id)})
+        if not question:
+            raise HTTPException(status_code=404, detail="Exam question not found")
+        # return serialize_doc(question)
+        return jsonable_encoder(question, custom_encoder={ObjectId: str})
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+# Get upcoming exams for a specific student based on their role_id
 @api.get("/get-upcoming-exams/{role_id}")
 async def get_upcoming_exams(role_id: str):
     try:
@@ -210,25 +248,38 @@ async def get_upcoming_exams(role_id: str):
     except Exception as error:
         print(f"Error fetching upcoming exams: {error}")
         raise HTTPException(status_code=500, detail=str(error))
+# <------------------ ////// Student Pre-Exam/ Exam Processing ////// ------------------>
 
-@api.get("/exam/{exam_id}")
-def index(exam_id: int):
-    return {"message": f"Exam ID: {exam_id}"}
 
-@api.post("/exam_ai")
-async def receive_yaw_angle(data: AIAnalysisData):
-    print(f"Received Yaw Angle: {data.yaw_angle} degrees")
 
-    await sio.emit(
-        "yaw_angle_update",
-        {
-            "yaw_angle": data.yaw_angle,
-        },
-    )
 
-    return {"message": "Yaw angle received and broadcast successfully."}
 
-def process_yaw_angle(yaw_angle):
+# @api.get("/exam/{exam_id}")
+# def index(exam_id: int):
+#     return {"message": f"Exam ID: {exam_id}"}
+
+# @api.post("/exam_ai")
+# async def receive_yaw_angle(data: AIAnalysisData):
+#     print(f"Received Yaw Angle: {data.yaw_angle} degrees")
+
+#     await sio.emit(
+#         "yaw_angle_update",
+#         {
+#             "yaw_angle": data.yaw_angle,
+#         },
+#     )
+
+#     return {"message": "Yaw angle received and broadcast successfully."}
+
+
+
+
+
+
+# <------------------ ////// AI Analysis Data Processing ////// ------------------->
+
+# Helper function to process yaw angle and convert negative values to positive
+def process_yaw_angle(yaw_angle: float):
     if yaw_angle is None:
         return 0
     elif float(yaw_angle) < 0:
@@ -237,8 +288,9 @@ def process_yaw_angle(yaw_angle):
     else:
         return float(yaw_angle)
 
+# For each second, student's yaw angle and mobile phone detection status will be processed
 @api.post("/ai_analysis")
-async def receive_ai_analysis(data: dict):
+async def receive_ai_analysis(data: AIAnalysisData):
     yaw_angle = process_yaw_angle(data.get("yaw_angle"))
     print("Received Yaw Angle in FastAPI:", yaw_angle)
     # yaw_angle = data.get("yaw_angle")
@@ -337,12 +389,14 @@ async def receive_ai_analysis(data: dict):
             },
         )
 
+# Helper function to get the current date and time in format DD/MM/YYYY, HH:MM:SS AM/PM for MongoDB
 def getCurrentDateTimeForMongoDB():
     now = datetime.now()
     date_string = now.strftime("%d/%m/%Y, %I:%M:%S %p").lower()
     print(f"Date Time to be inserted into MongoDB: {date_string}")
     return date_string
 
+# Send each of the student's analysis data to the database when the exam ends
 @api.post("/exam_ended")
 async def handle_exam_ended(roomID: str):
     print(f"Handling exam ended for Room ID: {roomID}")
@@ -383,8 +437,9 @@ async def handle_exam_ended(roomID: str):
         except Exception as error:
             raise HTTPException(status_code=500, detail=str(error))   
 
+# Handle student answers submission after exam ended
 @api.post("/handle-student-answers")
-async def handle_student_answers(data: dict):
+async def handle_student_answers(data: StudentAnswers):
     exam_question_id = data.get("exam_question_id")
     role_id = data.get("role_id")
     student_answers = data.get("student_answer")
@@ -406,3 +461,5 @@ async def handle_student_answers(data: dict):
         return {"message": "Student answers received and stored successfully."}
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
+
+# <------------------ ////// AI Analysis Data Processing ////// ------------------->
