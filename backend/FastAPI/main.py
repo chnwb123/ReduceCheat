@@ -25,7 +25,7 @@ class AIAnalysisData(BaseModel):
     phone_detected: bool
     date_time: str
 
-
+# Student Answers Model
 class StudentAnswers(BaseModel):
     exam_question_id: str
     role_id: str
