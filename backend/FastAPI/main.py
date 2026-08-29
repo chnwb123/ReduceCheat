@@ -19,24 +19,17 @@ class LoginData(BaseModel):
 
 # Student AI Analysis Data Model
 class AIAnalysisData(BaseModel):
-    user_role_id: str
-    exam_session_id: str
-    yaw_angles_collection: list
-    latest_yaw_angle: float
-    average_yaw_angle: float
-    yaw_angle_status: str
-    number_of_warnings: int
-    warnings_reasons: list
-    number_of_violations: int
-    violations_reasons: list
-    phone_detection_status: str
-    cheating_suspicion_score: float
+    yaw_angle: float
+    exam_question_id: str
+    role_id: str
+    phone_detected: bool
+    date_time: str
+
 
 class StudentAnswers(BaseModel):
     exam_question_id: str
     role_id: str
-    student_answers: list
-    date_string: str
+    student_answer: list
 
 # class AIAnalysisData(BaseModel):
 #     yaw_angle: float
@@ -86,13 +79,6 @@ async def connect(sid, environ):
     print(f"Client connected: {sid}")
     # Immediately send data to the connected client
     await sio.emit('server_status', {'data': 'Connected successfully!'}, to=sid)
-
-# @sio.event
-# async def request_data(sid, data):
-#     print(f"Received request from client: {data}")
-#     # Process data and broadcast/respond
-#     payload = {"message": "Here is your processed backend data"}
-#     await sio.emit('receive_data', payload, to=sid)
 
 @sio.event
 async def disconnect(sid):
@@ -163,22 +149,6 @@ async def exam_ended(sid, data: dict):
 def index():
     return {"message": "Hello, This is my new FastAPI application!"}
 
-# @api.get("/students")
-# async def get_students():
-#     try:
-#         students = await db["USER_T"].find({"roleType": "Student"}).to_list(length=1000)
-#         return [serialize_doc(student) for student in students]
-#     except Exception as error:
-#         raise HTTPException(status_code=500, detail=str(error))
-    
-# @api.get("/exam-questions")
-# async def get_exam_questions():
-#     try:
-#         questions = await db["EXAM_QUESTION_T"].find().to_list(length=1000)
-#         return [serialize_doc(question) for question in questions]
-#     except Exception as error:
-#         raise HTTPException(status_code=500, detail=str(error))
-
 
 
 
@@ -189,7 +159,7 @@ def index():
 @api.post("/login")
 async def login(data: LoginData):
     # Fetch data from MongoDB
-    user = await db["USER_T"].find_one({"username": data.username})
+    user = await db["USER_T"].find_one({"username": data.username, "authenticated": "true"})
     if not user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
     hashed_password = user.get("password")
@@ -254,28 +224,6 @@ async def get_upcoming_exams(role_id: str):
 
 
 
-# @api.get("/exam/{exam_id}")
-# def index(exam_id: int):
-#     return {"message": f"Exam ID: {exam_id}"}
-
-# @api.post("/exam_ai")
-# async def receive_yaw_angle(data: AIAnalysisData):
-#     print(f"Received Yaw Angle: {data.yaw_angle} degrees")
-
-#     await sio.emit(
-#         "yaw_angle_update",
-#         {
-#             "yaw_angle": data.yaw_angle,
-#         },
-#     )
-
-#     return {"message": "Yaw angle received and broadcast successfully."}
-
-
-
-
-
-
 # <------------------ ////// AI Analysis Data Processing ////// ------------------->
 
 # Helper function to process yaw angle and convert negative values to positive
@@ -291,14 +239,15 @@ def process_yaw_angle(yaw_angle: float):
 # For each second, student's yaw angle and mobile phone detection status will be processed
 @api.post("/ai_analysis")
 async def receive_ai_analysis(data: AIAnalysisData):
-    yaw_angle = process_yaw_angle(data.get("yaw_angle"))
+    # yaw_angle = process_yaw_angle(data.get("yaw_angle"))
+    yaw_angle = process_yaw_angle(data.yaw_angle)
     print("Received Yaw Angle in FastAPI:", yaw_angle)
     # yaw_angle = data.get("yaw_angle")
-    exam_question_id = data.get("exam_question_id")
-    role_id = data.get("role_id")
-    mobile_phone_detected = data.get("phone_detected", False)
+    exam_question_id = data.exam_question_id
+    role_id = data.role_id
+    mobile_phone_detected = data.phone_detected | False  # Default to False if not provided
     print(f"Received Mobile Phone Detection Status: {mobile_phone_detected}")
-    date_time = data.get("date_time")
+    date_time = data.date_time
 
     print(f"Received Yaw Angle: {yaw_angle} degrees for Exam Question ID: {exam_question_id} and Role ID: {role_id}")
     if not student_analysis_data:
@@ -440,9 +389,9 @@ async def handle_exam_ended(roomID: str):
 # Handle student answers submission after exam ended
 @api.post("/handle-student-answers")
 async def handle_student_answers(data: StudentAnswers):
-    exam_question_id = data.get("exam_question_id")
-    role_id = data.get("role_id")
-    student_answers = data.get("student_answer")
+    exam_question_id = data.exam_question_id
+    role_id = data.role_id
+    student_answers = data.student_answer
     date_string = getCurrentDateTimeForMongoDB()
 
     print(f"Received student answers for Exam Question ID: {exam_question_id} and Role ID: {role_id}")

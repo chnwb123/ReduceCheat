@@ -29,7 +29,7 @@ export default function InstructorCreateQuestionPage({
     };
 
     getParams();
-  }, []);
+  }, [params, searchParams]);
 
   useEffect(() => {
     const getExamQuestions = async () => {
@@ -69,7 +69,7 @@ export default function InstructorCreateQuestionPage({
           {
             label: "View Student Performance",
             href: `/instructor/view-student-performance/${instructorId}?name=${name}`,
-          }
+          },
         ]}
       />
       <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
@@ -84,38 +84,42 @@ export default function InstructorCreateQuestionPage({
           isSubmitted={isSubmitted}
         />
 
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Exam Questions Created
-          </h1>
-        </div>
+        {examQuestions.length > 0 && (
+          <>
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                Exam Questions Created
+              </h1>
+            </div>
 
-        <div className="h-100 w-full overflow-y-auto border p-4">
-          {isLoading ? (
-            <Loading />
-          ) : (
-            examQuestions.map((question, index) => (
-              <div
-                key={index}
-                className={`${index !== 0 ? "mt-4" : ""} grid grid-cols-[auto_1fr] gap-x-5 rounded bg-gray-300 p-2 text-xl font-bold`}
-              >
-                <p>Question Title:</p>
-                <p>{question.title}</p>
-                <p>Question Description:</p>
-                <p>{question.description}</p>
-                <p>Question Date:</p>
-                <p>{question.start_date_time?.slice(0, 10)}</p>
-                <p>Question Time:</p>
-                <p>
-                  {question.start_date_time?.slice(11, -3)} -{" "}
-                  {question.end_date_time?.slice(11)}
-                </p>
-                <p>Question Duration:</p>
-                <p>{formatDuration(question.duration)}</p>
-              </div>
-            ))
-          )}
-        </div>
+            <div className="h-100 w-full overflow-y-auto border p-4">
+              {isLoading ? (
+                <Loading />
+              ) : (
+                examQuestions.map((question, index) => (
+                  <div
+                    key={index}
+                    className={`${index !== 0 ? "mt-4" : ""} grid grid-cols-[auto_1fr] gap-x-5 rounded bg-gray-300 p-2 text-xl font-bold`}
+                  >
+                    <p>Question Title:</p>
+                    <p>{question.title}</p>
+                    <p>Question Description:</p>
+                    <p>{question.description}</p>
+                    <p>Question Date:</p>
+                    <p>{question.start_date_time?.slice(0, 10)}</p>
+                    <p>Question Time:</p>
+                    <p>
+                      {question.start_date_time?.slice(11, -3)} -{" "}
+                      {question.end_date_time?.slice(11)}
+                    </p>
+                    <p>Question Duration:</p>
+                    <p>{formatDuration(question.duration)}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

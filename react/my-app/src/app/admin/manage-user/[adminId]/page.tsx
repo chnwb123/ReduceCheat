@@ -55,10 +55,11 @@ export const userTypes: RoleType[] = [
   "Invigilator",
 ];
 
-export default function AdminCreateUserPage({
+export default function AdminManageUserPage({
   params,
   searchParams,
 }: AdminPageProps) {
+  const [deletingUser, setDeletingUser] = useState(false);
   const [adminId, setAdminId] = useState<UserDB["role_id"]>("");
   const [name, setName] = useState<UserDB["name"]>("");
   const [users, setUsers] = useState<UserDB[]>([]);
@@ -106,6 +107,10 @@ export default function AdminCreateUserPage({
   const handleSettleUserAccount = async (
     e: React.FormEvent<HTMLFormElement>,
   ) => {
+    if (deletingUser) {
+      deleteUser(selectedUserId);
+      return;
+    }
     setIsLoading(true);
     e.preventDefault();
     console.log("Settling user account for ID:", selectedUserId);
@@ -171,9 +176,39 @@ export default function AdminCreateUserPage({
     }
   };
 
+  const deleteUser = async (userId: UserDB["_id"] | null) => {
+    if (!deletingUser) {
+      return;
+    }
+    setIsLoading(true);
+    console.log("Deleting user for ID:", userId);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/mongodb/delete/admin/delete-one-user-by-id/${userId}`,
+        {
+          cache: "no-store",
+        },
+      );
+
+      if (response.ok) {
+        const userData = await response.json();
+        setIsLoading(false);
+        setSelectedUserId(null);
+        setDeletingUser(false);
+        console.log("Deleted user:", userData);
+      }
+    } catch (error) {
+      setIsLoading(false);
+      setDeletingUser(false);
+      console.error("Failed to delete user:", error);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-linear-to-br from-blue-900 via-indigo-500 to-blue-600 p-4">
-      <Navbar navItems={[
+      <Navbar
+        navItems={[
           { label: "Home", href: `/admin/${adminId}?name=${name}` },
           {
             label: "Manage Course",
@@ -182,167 +217,171 @@ export default function AdminCreateUserPage({
           {
             label: "Manage User",
             href: `/admin/manage-user/${adminId}?name=${name}`,
-          }
-        ]} />
-        {/* Authenticating Modal */}
-        <div
-          id="editModal"
-          className={`${selectedUserId ? "block" : "hidden"} fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm`}
-        >
-          {/* <!-- Modal Content Box --> */}
-          <div className="relative w-full max-w-md rounded-xl bg-white px-4 py-1 shadow-2xl transition-all">
-            {/* <!-- View Form Body --> */}
-            <form className="mt-4 space-y-4" onSubmit={handleSettleUserAccount}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)?.name || ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+          },
+        ]}
+      />
+      {/* Authenticating Modal */}
+      <div
+        id="editModal"
+        className={`${selectedUserId ? "block" : "hidden"} fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm`}
+      >
+        {/* <!-- Modal Content Box --> */}
+        <div className="relative w-full max-w-md rounded-xl bg-white px-4 py-1 shadow-2xl transition-all">
+          {/* <!-- View Form Body --> */}
+          <form className="mt-4 space-y-4" onSubmit={handleSettleUserAccount}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Name
+              </label>
+              <input
+                type="text"
+                value={users.find((u) => u._id === selectedUserId)?.name || ""}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Date of Birth
-                </label>
-                <input
-                  type="text"
-                  value={users.find((u) => u._id === selectedUserId)?.dob || ""}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Date of Birth
+              </label>
+              <input
+                type="text"
+                value={users.find((u) => u._id === selectedUserId)?.dob || ""}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)?.email || ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
+                type="text"
+                value={users.find((u) => u._id === selectedUserId)?.email || ""}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Role Type
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)?.role_type || ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Role Type
+              </label>
+              <input
+                type="text"
+                value={
+                  users.find((u) => u._id === selectedUserId)?.role_type || ""
+                }
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Role Id
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)?.role_id || ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Role Id
+              </label>
+              <input
+                type="text"
+                value={
+                  users.find((u) => u._id === selectedUserId)?.role_id || ""
+                }
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)?.username || ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <input
+                type="text"
+                value={
+                  users.find((u) => u._id === selectedUserId)?.username || ""
+                }
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)?.password || ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                type="text"
+                value={
+                  users.find((u) => u._id === selectedUserId)?.password || ""
+                }
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Created At
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)?.created_at ||
-                    ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Created At
+              </label>
+              <input
+                type="text"
+                value={
+                  users.find((u) => u._id === selectedUserId)?.created_at || ""
+                }
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Authentication Status
-                </label>
-                <input
-                  type="text"
-                  value={
-                    users.find((u) => u._id === selectedUserId)
-                      ?.authenticated || ""
-                  }
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  readOnly
-                />
-              </div>
-              {/* <!-- Action Buttons (Footer) --> */}
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  type="button"
-                  id="closeModalBtn"
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  onClick={() => setSelectedUserId(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  hidden={
-                    users.find((u) => u._id === selectedUserId)
-                      ?.authenticated === "true"
-                  }
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  Settle
-                </button>
-                {isLoading && <Loading />}
-              </div>
-            </form>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Authentication Status
+              </label>
+              <input
+                type="text"
+                value={
+                  users.find((u) => u._id === selectedUserId)?.authenticated ||
+                  ""
+                }
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                readOnly
+              />
+            </div>
+            {/* <!-- Action Buttons (Footer) --> */}
+            <div className="flex justify-end space-x-2 pt-2">
+              <button
+                className="rounded-md border border-gray-300 bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-400"
+                onClick={() => {
+                  setDeletingUser(true);
+                }}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                id="closeModalBtn"
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => setSelectedUserId(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                hidden={
+                  users.find((u) => u._id === selectedUserId)?.authenticated ===
+                  "true"
+                }
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Settle
+              </button>
+              {isLoading && <Loading />}
+            </div>
+          </form>
         </div>
+      </div>
       <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white">

@@ -30,9 +30,10 @@ export default function StudentPage({
     };
 
     getParams();
-  }, []);
+  }, [params, searchParams]);
 
   useEffect(() => {
+    if (studentId === "") return;
     const getupcomingExams = async () => {
       try {
         const response = await fetch(

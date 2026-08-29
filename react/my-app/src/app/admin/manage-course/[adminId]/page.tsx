@@ -80,9 +80,10 @@ export function UserDetailsDisplayPanelRadio({
 export const validateSelectionNumber = (
   fieldValue: number | undefined,
   fieldName: string,
+  action: string
 ) => {
   if (!fieldValue || fieldValue <= 0) {
-    return `At least one ${fieldName} must be selected.`;
+    return `At least one ${fieldName} must be ${action}}.`;
   }
   return "";
 };
@@ -148,6 +149,7 @@ function CourseDetailsDisplayPanel({
     const studentSelectionError = validateSelectionNumber(
       editingCourseDetails.student_ids?.length,
       "Student",
+      "selected"
     );
     setError({
       studentsSelectionError: studentSelectionError,
@@ -377,7 +379,7 @@ function CourseDetailsDisplayPanel({
             key={String(course._id)}
             className="grid grid-cols-2 rounded border-2 border-white p-5"
           >
-            <div className="flex justify-center">
+            <div>
               <input
                 className="rounded border-2 bg-blue-800 px-2 py-1 transition hover:bg-blue-600"
                 type="button"
@@ -389,7 +391,7 @@ function CourseDetailsDisplayPanel({
               />
             </div>
 
-            <div className="flex justify-center">
+            <div>
               <input
                 className="rounded border-2 bg-red-800 px-2 py-1 transition hover:bg-red-600"
                 type="button"
@@ -401,20 +403,20 @@ function CourseDetailsDisplayPanel({
             <div className="mt-5"></div>
             <div></div>
 
-            <div>Course Name</div>
+            <div className="font-bold">Course Name</div>
             <div>{course.name}</div>
 
-            <div>Course Description</div>
+            <div className="font-bold">Course Description</div>
             <div>{course.description}</div>
 
-            <div>Instructor Name</div>
+            <div className="font-bold">Instructor Name</div>
             <div>
               {course.instructor_details?.[0]?.name} {" ("}
               {course.instructor_details?.[0]?.role_id}
               {") "}
             </div>
 
-            <div>Student Names</div>
+            <div className="font-bold">Student Names</div>
             <div>
               {course.student_details?.map((student) => (
                 <div key={String(student._id)}>
@@ -553,10 +555,12 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
     const studentSelectionError = validateSelectionNumber(
       courseDetails.student_ids?.length,
       "Student",
+      "selected"
     );
     const instructorSelectionError = validateSelectionNumber(
       courseDetails.instructor_id ? 1 : 0,
       "Instructor",
+      "selected"
     );
 
     setErrors({

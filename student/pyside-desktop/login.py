@@ -105,15 +105,12 @@ class LoginForm(QWidget):
         main_layout.addSpacing(12)
 
         # Forgot Password Link
-        forgot_layout = QHBoxLayout()
-        forgot_layout.addStretch()
-        forgot_btn = QPushButton("Forgot Password?")
-        forgot_btn.setObjectName("LinkButton")
+        status_layout = QHBoxLayout()
+        status_layout.addStretch()
         self.status_label = QLabel("")
         self.status_label.setObjectName("LoginStatusLabel")
-        forgot_layout.addWidget(forgot_btn)
-        forgot_layout.addWidget(self.status_label)
-        main_layout.addLayout(forgot_layout)
+        status_layout.addWidget(self.status_label)
+        main_layout.addLayout(status_layout)
         main_layout.addSpacing(28)
 
         # Primary Action Login Button
@@ -129,15 +126,6 @@ class LoginForm(QWidget):
         footer_layout = QHBoxLayout()
         footer_layout.setAlignment(Qt.AlignCenter)
         
-        footer_text = QLabel("Don't have an account?")
-        footer_text.setObjectName("FooterText")
-        
-        signup_btn = QPushButton("Sign Up")
-        signup_btn.setObjectName("LinkButton")
-        signup_btn.setCursor(Qt.PointingHandCursor)
-        
-        footer_layout.addWidget(footer_text)
-        footer_layout.addWidget(signup_btn)
         main_layout.addLayout(footer_layout)
 
         # Apply Global Component Styling via QSS
@@ -188,10 +176,6 @@ class LoginForm(QWidget):
             QLabel#SubtitleLabel {
                 color: #a0a0b2;
             }
-            QLabel#FooterText {
-                color: #7e7e8f;
-                font-size: 11px;
-            }
             QLabel#LoginStatusLabel {
                 color: #ffffff;
                 font-family: 'Segoe UI';
@@ -232,21 +216,6 @@ class LoginForm(QWidget):
             }
             QPushButton#PrimaryButton:pressed {
                 background-color: #4338ca;
-            }
-
-            /* Flat Link Button Style */
-            QPushButton#LinkButton {
-                background: none;
-                border: none;
-                color: #6366f1;
-                font-family: 'Segoe UI';
-                font-size: 12px;
-                font-weight: bold;
-                padding: 0px;
-            }
-            QPushButton#LinkButton:hover {
-                color: #818cf8;
-                text-decoration: underline;
             }
         """)        
 

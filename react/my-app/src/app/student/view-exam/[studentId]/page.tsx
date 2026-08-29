@@ -7,11 +7,11 @@ import { StudentPageProps } from "../../[studentId]/page";
 import { Loading } from "@/components/general/animation/loading/page";
 
 export const formatDuration = (duration: number | undefined) => {
-    if (duration === undefined) return "Duration not available";
-    const hours = Math.floor(duration / 60);
-    const minutes = duration % 60;
-    return `${hours}h ${minutes}m`;
-  };
+  if (duration === undefined) return "Duration not available";
+  const hours = Math.floor(duration / 60);
+  const minutes = duration % 60;
+  return `${hours}h ${minutes}m`;
+};
 
 export default function StudentViewExamPage({
   params,
@@ -33,9 +33,10 @@ export default function StudentViewExamPage({
     };
 
     getParams();
-  }, []);
+  }, [params, searchParams]);
 
   useEffect(() => {
+    if (studentId === "") return;
     const getupcomingExams = async () => {
       setIsLoading(true);
       try {
@@ -80,32 +81,36 @@ export default function StudentViewExamPage({
             Upcoming Exams
           </h1>
         </div>
-        <div className="h-100 w-full overflow-y-auto border p-4">
-          {isLoading ? (
-            <Loading />
-          ) : (
-            upcomingExams.map((exam, index) => (
-              <div
-                key={index}
-                className={`${index !== 0 ? "mt-4" : ""} grid grid-cols-[auto_1fr] gap-x-5 rounded bg-gray-300 p-2 text-xl font-bold`}
-              >
-                <p>Exam Title:</p>
-                <p>{exam.title}</p>
-                <p>Exam Description:</p>
-                <p>{exam.description}</p>
-                <p>Exam Date:</p>
-                <p>{exam.start_date_time?.slice(0, 10)}</p>
-                <p>Exam Time:</p>
-                <p>
-                  {exam.start_date_time?.slice(11)} -{" "}
-                  {exam.end_date_time?.slice(11)}
-                </p>
-                <p>Exam Duration:</p>
-                <p>{formatDuration(exam.duration)}</p>
-              </div>
-            ))
-          )}
-        </div>
+        {upcomingExams.length === 0 ? (
+          <p className="text-center text-white">No upcoming exams found.</p>
+        ) : (
+          <div className="h-100 w-full overflow-y-auto border p-4">
+            {isLoading ? (
+              <Loading />
+            ) : (
+              upcomingExams.map((exam, index) => (
+                <div
+                  key={index}
+                  className={`${index !== 0 ? "mt-4" : ""} grid grid-cols-[auto_1fr] gap-x-5 rounded bg-gray-300 p-2 text-xl font-bold`}
+                >
+                  <p>Exam Title:</p>
+                  <p>{exam.title}</p>
+                  <p>Exam Description:</p>
+                  <p>{exam.description}</p>
+                  <p>Exam Date:</p>
+                  <p>{exam.start_date_time?.slice(0, 10)}</p>
+                  <p>Exam Time:</p>
+                  <p>
+                    {exam.start_date_time?.slice(11)} -{" "}
+                    {exam.end_date_time?.slice(11)}
+                  </p>
+                  <p>Exam Duration:</p>
+                  <p>{formatDuration(exam.duration)}</p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

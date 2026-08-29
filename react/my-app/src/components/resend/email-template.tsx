@@ -3,7 +3,6 @@ import * as React from "react";
 interface EmailTemplateProps {
   name: string;
   username: string;
-  password: string;
 }
 
 export function EmailTemplate({ name, username }: EmailTemplateProps) {

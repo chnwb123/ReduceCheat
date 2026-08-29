@@ -48,6 +48,9 @@ export default function RegisterPage() {
     if (/\d/.test(name)) {
       return "Name cannot contain numbers.";
     }
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(name)) {
+      return "Name cannot contain special characters.";
+    }
     return "";
   };
 

@@ -8,6 +8,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { CourseDB } from "@/app/api/mongodb/write/admin/create-one-course/route";
 import { UserDB } from "@/app/api/mongodb/write/admin/create-one-user/route";
 import { validateSelectionNumber } from "@/app/admin/manage-course/[adminId]/page";
+import Swal from "sweetalert2";
 
 export type ExamData = {
   title: string;
@@ -40,10 +41,6 @@ export type SectionData = {
   sectionDescription: string;
   objectiveQuestions: ObjectiveQuestionData[];
   subjectiveQuestions: SubjectiveQuestionData[];
-};
-
-type CreateQuestionFormProps = {
-  instructorId: UserDB["role_id"] | string;
 };
 
 type SectionErrors = {
@@ -130,7 +127,9 @@ function SubjectiveQuestion({
   return (
     <>
       <tr>
-        <td>--</td>
+        <td>-</td>
+        <td></td>
+        <td>-</td>
       </tr>
 
       <tr>
@@ -175,7 +174,7 @@ function SubjectiveQuestion({
         <th>
           <label htmlFor={`s${index}-marks`}>Marks:</label>
         </th>
-        <td className="flex items-center gap-2">
+        <td className="flex items-center gap-2 pl-2">
           <input
             id={`s${index}-marks`}
             className="w-24 rounded-md border-2 border-white px-1 py-1 outline-none"
@@ -196,6 +195,12 @@ function SubjectiveQuestion({
             Remove
           </button>
         </td>
+      </tr>
+
+      <tr>
+        <td>-</td>
+        <td></td>
+        <td>-</td>
       </tr>
     </>
   );
@@ -222,6 +227,11 @@ function ObjectiveQuestion({
 
   const addOption = () =>
     onChange(index, { numOptions: numOptions + 1, options: [...options, ""] });
+  const removeOption = () =>
+    onChange(index, {
+      numOptions: Math.max(1, numOptions - 1),
+      options: options.slice(0, -1),
+    });
   const setTitle = (v: string) => onChange(index, { title: v });
   const setCorrect = (v: string) => onChange(index, { correctAnswer: v });
   const setMarks = (v: number) => onChange(index, { marks: v });
@@ -252,7 +262,9 @@ function ObjectiveQuestion({
   return (
     <>
       <tr>
-        <td>--</td>
+        <td>-</td>
+        <td></td>
+        <td>-</td>
       </tr>
 
       <tr>
@@ -282,17 +294,17 @@ function ObjectiveQuestion({
         <td className="flex items-center gap-2 pl-2">
           <button
             type="button"
-            className="border-2 border-black text-black bg-white px-1 py-1 md:rounded"
+            className="border-2 border-black bg-white px-1 py-1 text-black md:rounded"
             onClick={addOption}
           >
             Add Option
           </button>
           <button
             type="button"
-            className="text-sm text-red-600"
-            onClick={() => onRemove(index)}
+            className="border-2 border-black bg-white px-1 py-1 text-black md:rounded"
+            onClick={removeOption}
           >
-            Remove
+            Remove Option
           </button>
         </td>
       </tr>
@@ -303,10 +315,10 @@ function ObjectiveQuestion({
         <th>
           <label htmlFor={`q${index}-answer`}>Correct Answer:</label>
         </th>
-        <td>
+        <td className="flex items-center gap-2 pl-2">
           <select
             id={`q${index}-answer`}
-            className="w-full rounded-md border-2 border-white text-black bg-white px-1 py-1 outline-none"
+            className="w-full rounded-md border-2 border-white bg-white px-1 py-1 text-black outline-none"
             value={correctAnswer}
             required
             onChange={(e) => setCorrect(e.target.value)}
@@ -330,7 +342,7 @@ function ObjectiveQuestion({
         <th>
           <label htmlFor={`q${index}-marks`}>Marks:</label>
         </th>
-        <td>
+        <td className="flex items-center gap-2 pl-2">
           <input
             id={`q${index}-marks`}
             className="w-24 rounded-md border-2 border-white px-1 py-1 outline-none"
@@ -342,7 +354,20 @@ function ObjectiveQuestion({
             onChange={(e) => setMarks(Number(e.target.value) || 0)}
             name={`objective[${index}].marks`}
           />
+          <button
+            type="button"
+            className="text-sm text-red-600"
+            onClick={() => onRemove(index)}
+          >
+            Remove
+          </button>
         </td>
+      </tr>
+
+      <tr>
+        <td>-</td>
+        <td></td>
+        <td>-</td>
       </tr>
     </>
   );
@@ -377,7 +402,7 @@ function Form({
         ...objectiveQuestions,
         {
           title: "",
-          numOptions: 1,
+          numOptions: 2,
           options: [""],
           correctAnswer: "",
           marks: 0,
@@ -496,7 +521,7 @@ function Form({
             <td className="pl-2">
               <button
                 type="button"
-                className="border-2 border-white text-black bg-white px-1 py-1"
+                className="border-2 border-white bg-white px-1 py-1 text-black"
                 onClick={toggleSectionDescription}
               >
                 {displaySectionDescription ? "Remove" : "Add"} Description
@@ -511,7 +536,7 @@ function Form({
             <td className="pl-2">
               <button
                 type="button"
-                className="border-2 border-white text-black bg-white px-1 py-1"
+                className="border-2 border-white bg-white px-1 py-1 text-black"
                 onClick={addObjectiveQuestion}
               >
                 Add Objective Question
@@ -531,7 +556,7 @@ function Form({
             <td className="pl-2">
               <button
                 type="button"
-                className="border-2 border-white text-black bg-white px-1 py-1"
+                className="border-2 border-white bg-white px-1 py-1 text-black"
                 onClick={addSubjectiveQuestion}
               >
                 Add Subjective Question
@@ -684,6 +709,8 @@ export default function CreateQuestionForm({
         0
       ) {
         return "The difference between start and end date/time must be in intervals of 15 minutes";
+      } else if (startDate.getDate() !== endDate.getDate()) {
+        return "Start date and end date must be the same";
       }
       return "";
     };
@@ -702,10 +729,12 @@ export default function CreateQuestionForm({
       objectiveQuestionsError: validateSelectionNumber(
         section.objectiveQuestions.length,
         "Objective Questions",
+        "added",
       ),
       subjectiveQuestionsError: validateSelectionNumber(
         section.subjectiveQuestions.length,
         "Subjective Questions",
+        "added",
       ),
     }));
 
@@ -714,11 +743,18 @@ export default function CreateQuestionForm({
     if (
       sectionErrors.some(
         (sectionError) =>
-          sectionError.objectiveQuestionsError.length > 0 ||
+          sectionError.objectiveQuestionsError.length > 0 &&
           sectionError.subjectiveQuestionsError.length > 0,
       )
     ) {
       return;
+    } else {
+      setErrors(
+        sectionErrors.map(() => ({
+          objectiveQuestionsError: "",
+          subjectiveQuestionsError: "",
+        })),
+      );
     }
 
     const validateTotalMarks = (totalMarks: number) => {
@@ -747,6 +783,15 @@ export default function CreateQuestionForm({
           body: JSON.stringify({ payload: payload }),
         },
       );
+      if (response.ok) {
+        Swal.fire({
+          title: "Successful Exam Created!",
+          text: "You have created the exam question.",
+          icon: "success",
+          confirmButtonText: "Cool",
+          confirmButtonColor: "#3085d6",
+        });
+      }
       console.log("Response from backend:", await response.json());
     } catch (error) {
       console.error("Error creating exam question:", error);
@@ -785,7 +830,7 @@ export default function CreateQuestionForm({
   }, [instructorId]);
 
   return (
-    <div className="p-4 text-white tracking-tight">
+    <div className="p-4 tracking-tight text-white">
       <form onSubmit={handleSubmit}>
         <div className="mb-6 flex items-center gap-4">
           <label htmlFor="exam-title" className="flex-none text-lg font-bold">
@@ -794,7 +839,7 @@ export default function CreateQuestionForm({
           <select
             id={`course-select`}
             required
-            className="w-full rounded-md border-2 border-white text-white px-1 py-1 outline-none"
+            className="w-full rounded-md border-2 border-white px-1 py-1 text-white outline-none"
             value={examData.course_id}
             onChange={(e) =>
               setExamData({ ...examData, course_id: e.target.value })
@@ -887,7 +932,7 @@ export default function CreateQuestionForm({
           <p className="text-lg font-bold">Sections: {sections.length}</p>
           <button
             type="button"
-            className="rounded border-2 border-black text-black bg-white px-3 py-1"
+            className="rounded border-2 border-black bg-white px-3 py-1 text-black"
             onClick={addSection}
           >
             Add Section
@@ -910,7 +955,7 @@ export default function CreateQuestionForm({
           />
         ))}
 
-        <div className="mt-6 mb-4 rounded bg-gray-100 text-black p-4">
+        <div className="mt-6 mb-4 rounded bg-gray-100 p-4 text-black">
           <p className="text-2xl font-bold">Total Exam Marks: {totalMarks}</p>
           <span className="text-sm font-semibold tracking-wider text-red-400">
             {" "}
