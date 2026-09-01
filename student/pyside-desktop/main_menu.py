@@ -65,7 +65,7 @@ class HomePage(QMainWindow):
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
         
-        self.label = QLabel("Select a exam session:")
+        self.label = QLabel("Select an exam session:")
         self.label.setObjectName("Heading")
         self.label.setFont(headingFont)
         self.layout.addWidget(self.label)

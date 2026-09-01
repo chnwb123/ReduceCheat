@@ -42,7 +42,7 @@ class ExamAnsweringWindow(QMainWindow):
     def __init__(self, exam_question_id=None, start_date_time=None, end_date_time=None, duration=None, date_time=None, role_id=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.student_answers = [] # Store student answers
-        self.exam_locked = False
+        self.exam_locked = True # Lock the exam window to prevent closing
         self.monitor_process = None # student/AI-background/main.py AI analysis program
         self.currentTime = QDateTime.currentDateTime()
         self.examStartDateTime = self.formatDateTime(start_date_time)
@@ -64,13 +64,13 @@ class ExamAnsweringWindow(QMainWindow):
         self.countdownTimer.timeout.connect(self.updateTimeRemaining)
         self.countdownTimer.start(1000)
 
-        # self.setWindowFlags(
-        #     Qt.Window |
-        #     Qt.FramelessWindowHint |
-        #     Qt.WindowStaysOnTopHint
-        # )
+        self.setWindowFlags(
+            Qt.Window |
+            Qt.FramelessWindowHint |
+            Qt.WindowStaysOnTopHint
+        )
         
-        # self.setWindowState(Qt.WindowFullScreen)
+        self.setWindowState(Qt.WindowFullScreen)
 
         gradient = QLinearGradient(0, 0, 0, self.height())
         gradient.setColorAt(0.0, QColor("#1e1e2f"))
@@ -259,7 +259,10 @@ class ExamAnsweringWindow(QMainWindow):
         self.sio.emit('exam_ended', room_details)
 
         try:
-            response = requests.post(f"http://127.0.0.1:8000/handle-student-answers", json={"exam_question_id": self.exam_question_id, "role_id": self.user_role_id, "student_answer": self.student_answers}) 
+            response = requests.post(f"http://127.0.0.1:8000/handle-student-answers", 
+                                     json={"exam_question_id": self.exam_question_id, 
+                                           "role_id": self.user_role_id, 
+                                           "student_answer": self.student_answers}) 
         except requests.RequestException as e:
             print(f"Error sending student answers to FastAPI: {e}")
 

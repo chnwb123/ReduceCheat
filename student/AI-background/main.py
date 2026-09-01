@@ -129,7 +129,12 @@ def print_face_landmarker_result(result: vision.FaceLandmarkerResult):
             # response = requests.post(f"http://127.0.0.1:8000/exam_ai", json={"yaw_angle": yaw})
             # print(f"Sending Yaw Angle: {yaw} degrees to FastAPI for Exam Question ID: {exam_question_id} and Role ID: {user_role_id}")
             malaysia_time = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
-            response = requests.post(f"http://127.0.0.1:8000/ai_analysis", json={"yaw_angle": yaw, "exam_question_id": exam_question_id, "role_id": user_role_id, "phone_detected": phone_detected, "date_time": malaysia_time.strftime("%Y-%m-%d %I:%M %p")})
+            response = requests.post(f"http://127.0.0.1:8000/ai_analysis", 
+                                     json={"yaw_angle": yaw, 
+                                           "exam_question_id": exam_question_id, 
+                                           "role_id": user_role_id, 
+                                           "phone_detected": phone_detected, 
+                                           "date_time": malaysia_time.strftime("%Y-%m-%d %I:%M %p")})
         except requests.RequestException as e:
             print(f"Error sending yaw angle to FastAPI: {e}")
 

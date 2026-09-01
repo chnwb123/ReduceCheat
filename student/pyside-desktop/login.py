@@ -88,7 +88,7 @@ class LoginForm(QWidget):
 
         # Input Fields Setup
         self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Username or Email")
+        self.username_input.setPlaceholderText("Username")
         self.username_input.setObjectName("InputField")
         self.username_input.setText("STU1")
         main_layout.addWidget(self.username_input)

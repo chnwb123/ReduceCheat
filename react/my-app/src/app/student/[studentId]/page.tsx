@@ -61,13 +61,9 @@ export default function StudentPage({
         navItems={[
           { label: "Home", href: `/student/${studentId}?name=${name}` },
           {
-            label: "View Exam",
+            label: "View Upcoming Exams",
             href: `/student/view-exam/${studentId}?name=${name}`,
-          },
-          {
-            label: "Documentation",
-            href: `/student/view-documentation/${studentId}?name=${name}`,
-          },
+          }
         ]}
       />
       <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
@@ -76,7 +72,7 @@ export default function StudentPage({
             Welcome to the Student Dashboard, {name}
           </h1>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1">
           <Link href={`/student/view-exam/${studentId}?name=${name}`}>
             <div className="rounded bg-white/10 px-4 py-4 text-center text-xl font-semibold text-white shadow-md transition hover:bg-white/20">
               {upcomingExams.length > 0 && (
@@ -84,12 +80,7 @@ export default function StudentPage({
                   <AttentionGetter newCount={upcomingExams.length} countName="upcoming exam" />
                 </div>
               )}
-              View Exam
-            </div>
-          </Link>
-          <Link href={`/student/view-documentation/${studentId}?name=${name}`}>
-            <div className="h-full rounded bg-white/10 px-4 py-4 text-center text-xl font-semibold text-white shadow-md transition hover:bg-white/20">
-              View Documentation
+              View Upcoming Exams
             </div>
           </Link>
         </div>

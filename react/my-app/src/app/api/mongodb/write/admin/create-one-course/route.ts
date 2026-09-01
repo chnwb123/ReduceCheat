@@ -7,6 +7,7 @@ import { UserDB } from "../create-one-user/route";
 export interface CourseDB {
     _id?: ObjectId;
     name: Course["name"];
+    username?: UserDB["username"];
     description: Course["description"];
     instructor_id?: Course["instructor_id"] | ObjectId;
     instructor_details?: UserDB[];

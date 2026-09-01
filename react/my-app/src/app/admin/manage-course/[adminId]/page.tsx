@@ -28,7 +28,7 @@ export function UserDetailsDisplayPanelCheckbox({
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
           <label>
             {user.name
-              ? user.name + " (" + user.role_id + ") "
+              ? user.name + " (" + user.username + ") "
               : "Unnamed user"}
           </label>
           <input
@@ -61,7 +61,7 @@ export function UserDetailsDisplayPanelRadio({
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
           <label>
             {user.name
-              ? user.name + " (" + user.role_id + ") "
+              ? user.name + " (" + user.username + ") "
               : "Unnamed user"}
           </label>
           <input
@@ -412,7 +412,7 @@ function CourseDetailsDisplayPanel({
             <div className="font-bold">Instructor Name</div>
             <div>
               {course.instructor_details?.[0]?.name} {" ("}
-              {course.instructor_details?.[0]?.role_id}
+              {course.instructor_details?.[0]?.username}
               {") "}
             </div>
 
@@ -422,7 +422,7 @@ function CourseDetailsDisplayPanel({
                 <div key={String(student._id)}>
                   {student.name}
                   {" ("}
-                  {student.role_id}
+                  {student.username}
                   {") "}
                   {course.student_details?.length &&
                   course.student_details.length > 1
@@ -719,14 +719,14 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
               )}
 
               <h1 className="mt-5 text-lg font-medium text-white">
-                Instructors
+                Instructor
               </h1>
               {/* filter instructors */}
               <input
                 id={"instructor-filter-input"}
                 className="mt-2 w-full rounded-md border-2 border-white px-1 py-1 outline-none"
                 type="text"
-                placeholder="Filter Instructors..."
+                placeholder="Filter Instructor..."
                 value={filteringInstructors}
                 onChange={handleInstructorFilterChange}
                 name="instructorFilter"

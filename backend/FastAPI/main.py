@@ -298,7 +298,7 @@ async def receive_ai_analysis(data: AIAnalysisData):
                 avg_yaw_angle = sum(latest_yaw_angles) / len(latest_yaw_angles)
                 print(f"Average Yaw Angle for student {role_id}: {avg_yaw_angle} degrees")
                 entry["average_yaw_angle"] = avg_yaw_angle
-                entry["cheating_suspicion_score"] = ((entry["number_of_warnings"]) * 2) + ((entry["number_of_violations"]) * 4)   # Calculate cheating suspicion score as a percentage
+                entry["cheating_suspicion_score"] = min(((entry["number_of_warnings"]) * 10) + ((entry["number_of_violations"]) * 50), 100)   # Calculate cheating suspicion score as a percentage
 
                 # Process the latest 4 yaw angles to determine if the student is looking away
                 if len(latest_yaw_angles) % 4 == 0:  # Check if we have a multiple of 4 yaw angles

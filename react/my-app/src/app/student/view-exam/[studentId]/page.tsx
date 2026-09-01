@@ -66,13 +66,9 @@ export default function StudentViewExamPage({
         navItems={[
           { label: "Home", href: `/student/${studentId}?name=${name}` },
           {
-            label: "View Exam",
+            label: "View Upcoming Exams",
             href: `/student/view-exam/${studentId}?name=${name}`,
-          },
-          {
-            label: "Documentation",
-            href: `/student/view-documentation/${studentId}?name=${name}`,
-          },
+          }
         ]}
       />
       <div className="relative mt-20 w-full rounded-2xl border border-slate-800 bg-slate-900/60 px-2 py-4 shadow-2xl backdrop-blur-xl">
