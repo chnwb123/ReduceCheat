@@ -28,7 +28,7 @@ export function UserDetailsDisplayPanelCheckbox({
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
           <label>
             {user.name
-              ? user.name + " (" + user.username + ") "
+              ? user.name + " (" + user.role_id + ") "
               : "Unnamed user"}
           </label>
           <input
@@ -61,7 +61,7 @@ export function UserDetailsDisplayPanelRadio({
         <li key={String(user._id) ?? `${user.name ?? "user"}-${index}`}>
           <label>
             {user.name
-              ? user.name + " (" + user.username + ") "
+              ? user.name + " (" + user.role_id + ") "
               : "Unnamed user"}
           </label>
           <input
@@ -412,7 +412,7 @@ function CourseDetailsDisplayPanel({
             <div className="font-bold">Instructor Name</div>
             <div>
               {course.instructor_details?.[0]?.name} {" ("}
-              {course.instructor_details?.[0]?.username}
+              {course.instructor_details?.[0]?.role_id}
               {") "}
             </div>
 
@@ -422,7 +422,7 @@ function CourseDetailsDisplayPanel({
                 <div key={String(student._id)}>
                   {student.name}
                   {" ("}
-                  {student.username}
+                  {student.role_id}
                   {") "}
                   {course.student_details?.length &&
                   course.student_details.length > 1
@@ -711,6 +711,7 @@ function CreateCoursePanel({ params, searchParams }: AdminPageProps) {
                     return { ...prev, student_ids: updatedStudentIds };
                   });
                 }}
+                selectedIds={courseDetails.student_ids}
               />
               {errors.studentsSelectionError && (
                 <p className="mt-2 text-sm font-semibold tracking-wider text-red-400">

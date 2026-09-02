@@ -206,7 +206,6 @@ class ExamAnsweringWindow(QMainWindow):
             self.timeRemaining.setText(f"{hours:02d}:{minutes:02d}:{seconds:02d}")
         else:
             self.timeRemaining.setText("00:00:00")
-            self.end_exam()  # End the exam when time is up
 
     def formatDateTime(self, dateTimeStr):
         qdt = QDateTime.fromString(
@@ -226,6 +225,7 @@ class ExamAnsweringWindow(QMainWindow):
             return
 
         if now >= endDateTime:
+            self.exam_locked = False  # Unlock the exam window
             self.end_exam()
 
     def keyPressEvent(self, event):
