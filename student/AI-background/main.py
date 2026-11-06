@@ -172,7 +172,8 @@ def main():
     )
     
     # 3. Initialize OpenCV Video Capture (0 is usually the default webcam)
-    cap = cv2.VideoCapture(0)
+    video_source = sys.argv[3] if len(sys.argv) > 3 else 0
+    cap = cv2.VideoCapture(video_source)
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         return

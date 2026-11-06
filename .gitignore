@@ -12,3 +12,11 @@ react/my-app/next-env.d.ts
 react/my-app/pnpm-lock.yaml
 react/my-app/pnpm-workspace.yaml
 student_pyside6/
+desktop.ini
+Project_Details.txt
+backend/FastAPI/__pycache__
+backend/FastAPI/.env.local
+student/AI-background/details.txt
+student/AI-background/testing.py
+student/AI-background/__pycache__
+student/demo_videos

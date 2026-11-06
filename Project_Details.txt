@@ -13,6 +13,10 @@ node index
 -- Run FastAPI server with SocketIO server -- 
 python -m uvicorn main:socket_app --reload --port 8000
 
+-- Run Demo AI Analysis STU_2
+cd C:\FY_FYP\ReduceCheat\student\AI-background 
+python ./main.py STU_2 6a92f1db44e3cf20e474ab4c "C:\FY_FYP\ReduceCheat\student\demo_videos\demo_1.mp4"
+
 
 -- Socket IO integration -- 
 
